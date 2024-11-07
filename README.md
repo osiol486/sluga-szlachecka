@@ -29,7 +29,7 @@ Bot korzysta z FFMPEG do odtwarzania muzyki, więc konieczne jest jego pobranie.
 4. Aby bot mógł korzystać z FFMPEG, musisz dodać ten folder `bin` do zmiennych środowiskowych systemu (tzw. PATH). Dzięki temu system będzie wiedział, gdzie szukać FFMPEG, gdy będzie to potrzebne.
    - Kliknij prawym przyciskiem na "Mój komputer" > "Właściwości" > "Zaawansowane ustawienia systemu" > "Zmienna środowiskowa".
    - Znajdź zmienną `Path` i edytuj ją, dodając ścieżkę do folderu `bin` (np. `C:\ffmpeg\bin`).
-5. Co więcej w pliku music.py (folder cogs) musisz zmienić ścieżkę do FFMPEG. Musisz tam podać ścieżkę do pliku ffmpeg.exe. Jest to plik w folderze bin.
+5. Co więcej w pliku music.py (folder cogs) musisz zmienić ścieżkę do FFMPEG. Musisz tam podać ścieżkę do pliku ffmpeg.exe. Jest to plik w folderze bin (patrz pkt 2).
 
 ## Krok 3: Stwórz aplikację bota na stronie Discord Developer Portal
 
