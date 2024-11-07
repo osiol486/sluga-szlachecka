@@ -18,8 +18,11 @@ Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowis
 Bot korzysta z FFMPEG do odtwarzania muzyki, więc konieczne jest jego pobranie.
 
 1. Przejdź na stronę [FFmpeg](https://ffmpeg.org/download.html) i pobierz odpowiednią wersję dla swojego systemu operacyjnego.
-2. Wypakuj archiwum i umieść pliki w dogodnej lokalizacji na dysku.
-3. Dodaj ścieżkę do katalogu `bin` FFMPEG do zmiennych środowiskowych systemu (dodaj do PATH).
+2. Wypakuj archiwum, które pobrałeś (np. za pomocą programu WinRAR lub 7-Zip).
+3. Znajdziesz tam folder o nazwie `ffmpeg`. Wewnątrz niego jest podfolder `bin` - to tam znajdują się najważniejsze pliki programu.
+4. Aby bot mógł korzystać z FFMPEG, musisz dodać ten folder `bin` do zmiennych środowiskowych systemu (tzw. PATH). Dzięki temu system będzie wiedział, gdzie szukać FFMPEG, gdy będzie to potrzebne.
+   - Kliknij prawym przyciskiem na "Mój komputer" > "Właściwości" > "Zaawansowane ustawienia systemu" > "Zmienna środowiskowa".
+   - Znajdź zmienną `Path` i edytuj ją, dodając ścieżkę do folderu `bin` (np. `C:\ffmpeg\bin`).
 
 ## Krok 3: Stwórz aplikację bota na stronie Discord Developer Portal
 
@@ -33,17 +36,21 @@ Bot korzysta z FFMPEG do odtwarzania muzyki, więc konieczne jest jego pobranie.
 
 ## Krok 4: Klonowanie repozytorium
 
-Aby pobrać kod źródłowy bota, wykonaj poniższe kroki:
+Aby pobrać kod źródłowy bota, musisz go sklonować (pobrać na swój komputer). W tym celu:
 
-```bash
-git clone https://github.com/nazwauzytkownika/nazwarepozytorium.git
-```
+1. Otwórz wiersz poleceń (`CMD`) lub terminal, np. w systemie Windows możesz nacisnąć klawisz Windows, wpisać "cmd" i uruchomić Wiersz polecenia.
+2. Przejdź do folderu, w którym chcesz umieścić kod bota, używając polecenia `cd` (np. `cd C:\TwojeProjekty`).
+3. Następnie wpisz poniższe polecenie, aby sklonować repozytorium:
 
-Następnie przejdź do katalogu z botem:
+   ```bash
+   git clone https://github.com/nazwauzytkownika/nazwarepozytorium.git
+   ```
 
-```bash
-cd nazwarepozytorium
-```
+4. Przejdź do katalogu z botem:
+
+   ```bash
+   cd nazwarepozytorium
+   ```
 
 ## Krok 5: Zainstaluj wymagane biblioteki
 
