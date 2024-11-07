@@ -56,15 +56,25 @@ Aby pobrać kod źródłowy bota, musisz go sklonować (pobrać na swój kompute
 
 Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu, w katalogu projektu, wpisz poniższe polecenia:
 
-'pip install discord.py'
-'pip install youtube-dl'
-'pip install yt-dlp'
-'pip install python-dotenv'
-'pip install colorama'
+   ```bash
+   pip install discord.py
+   ```
+   ```bash
+   pip install youtube-dl
+   ```
+   ```bash
+   pip install yt-dlp
+   ```
+   ```bash
+   pip install python-dotenv
+   ```
+   ```bash
+   pip install colorama
+   ```
 
 ## Krok 6: Konfiguracja tokena bota
 
-1. Utwórz plik 'token.env' w tym samym folderze, gdzie masz główny plik z kodem bota (discordbot.py).
+1. Utwórz plik `token.env` w tym samym folderze, gdzie masz główny plik z kodem bota (discordbot.py).
 2. Wklej token bota, który skopiowałeś wcześniej, w następujący sposób:
 
 ```
