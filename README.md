@@ -72,6 +72,12 @@ Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu, 
    ```bash
    pip install colorama
    ```
+   ```bash
+   pip install loguru
+   ```
+   ```bash
+   pip install emoji
+   ```
 
 ## Krok 6: Konfiguracja tokena bota
 
