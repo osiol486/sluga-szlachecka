@@ -1,5 +1,7 @@
 # Instrukcja instalacji bota
 
+**Informuję, że instrukcja dotyczy instalacji na systemie Windows.** 
+
 ## Wymagania wstępne
 Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
 
@@ -79,7 +81,17 @@ Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu, 
    pip install emoji
    ```
 
-## Krok 6: Konfiguracja tokena bota
+## Krok 6: Instalacja `libopus` (do obsługi dźwięku)
+
+Biblioteka `libopus` jest wymagana przez `discord.py` do odtwarzania dźwięku na serwerach Discord. Jest to kodek audio, który umożliwia przesyłanie dźwięku wysokiej jakości z niskim opóźnieniem. Jeśli biblioteka `libopus` nie jest zainstalowana lub poprawnie skonfigurowana, bot może nie być w stanie odtwarzać dźwięku.
+
+1. Pobierz plik `libopus-0.dll` ze strony [DLL-files.com](https://www.dll-files.com/libopus-0.dll.html).
+2. Rozpakuj pobrany plik, jeśli jest spakowany.
+3. Umieść plik `libopus-0.dll` w tym samym folderze, w którym znajduje się Twój plik `discordbot.py`.
+
+**Uwaga:** Umieszczenie `libopus-0.dll` w folderze z botem pozwala `discord.py` na znalezienie biblioteki bez konieczności dodatkowej konfiguracji.
+
+## Krok 7: Konfiguracja tokena bota
 
 1. Utwórz plik `token.env` w tym samym folderze, gdzie masz główny plik z kodem bota (discordbot.py).
 2. Wklej token bota, który skopiowałeś wcześniej, w następujący sposób:
@@ -92,7 +104,7 @@ Zapisz plik.
 
 ## Krok 7: Uruchomienie bota
 
-Po skonfigurowaniu tokena bota możesz uruchomić bota, używając poniższego polecenia w CMD:
+Po skonfigurowaniu tokena bota możesz uruchomić bota, używając poniższego polecenia w `CMD`:
 
 ```bash
 python discordbot.py
