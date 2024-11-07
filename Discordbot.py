@@ -6,6 +6,8 @@ import re
 import logging
 from colorama import Fore, Style
 
+
+
 # Załaduj zmienne środowiskowe
 load_dotenv(dotenv_path='token.env')
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -101,17 +103,15 @@ def parse_minutes_seconds(time_str):
         return int(minutes) * 60 + int(seconds)
     return None
 
-@bot.command(name='pomoc', help='Wyświetl listę komend')
-async def pomoc(ctx):
-    embed = discord.Embed(title="Lista dostępnych komend", description="Komendy są posegregowane według kategorii. Użyj !pomoc, aby wyświetlić listę komend.", color=EMBED_COLOR)
-    embed.add_field(name="Komendy muzyczne", value="!play, !pause, !resume, !skip, !s, !stop, !queue, !now_playing, !loop, !loopqueue, !move", inline=False)
-    embed.add_field(name="Komendy moderacyjne", value="!kick, !ban, !mute, !unmute", inline=False)
-    await ctx.send(embed=embed)
+bot.remove_command('help')
+
 
 # Załaduj cogs
 async def load_cogs():
     await bot.load_extension('cogs.music')  # Załaduj cogs muzyczne z music.py
     await bot.load_extension('cogs.moderation')  # Załaduj cogs moderacyjne z moderation.py
+    await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
+
 
 # Uruchomienie bota
 bot.run(TOKEN)

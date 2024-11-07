@@ -6,7 +6,7 @@ import re
 import threading
 import logging
 from colorama import Fore, Style
-
+from datetime import timedelta, datetime
 
 # Konfiguracja loggera
 logging.basicConfig(
@@ -31,6 +31,9 @@ loop_song = False
 loop_queue = False
 voice_channel = None
 voice_client = None
+start_time = None
+
+disconnect_task = None
 
 # Kolory dla embedów
 EMBED_COLOR = 0xA8E6CF  # pastelowy zielony
@@ -71,7 +74,7 @@ class Music(commands.Cog):
     # Komenda odtwarzania muzyki
     @commands.command(name='play', aliases=['p'], help='Odtwórz muzykę z YouTube. Użyj: !play [nazwa utworu / URL]')
     async def play(self, ctx, *url):
-        global current_song, loop_song, voice_channel, voice_client
+        global current_song, loop_song, voice_channel, voice_client, disconnect_task
         try:
             # Przechodzimy na kanał głosowy użytkownika
             channel = ctx.author.voice.channel
@@ -87,6 +90,11 @@ class Music(commands.Cog):
         except AttributeError:
             await ctx.send("Musisz być na kanale głosowym, aby użyć tej komendy. 🎶")
             return
+
+        # Jeśli istnieje zadanie rozłączenia, anulujemy je
+        if disconnect_task:
+            disconnect_task.cancel()
+            disconnect_task = None
 
         # Łączenie URL jeśli użytkownik podał frazę zamiast linku
         url = ' '.join(url)
@@ -131,7 +139,7 @@ class Music(commands.Cog):
                 else:
                     # Odtwarzanie muzyki
                     def after_song(err):
-                        global loop_song, loop_queue
+                        global loop_song, loop_queue, disconnect_task
                         if loop_song:
                             threading.Thread(target=self.play_music, args=(voice_client, url2, after_song)).start()
                         elif queues and loop_queue:
@@ -142,7 +150,7 @@ class Music(commands.Cog):
                             next_song = queues.pop(0)
                             ctx.bot.loop.create_task(self.play(ctx, next_song[0]))
                         else:
-                            asyncio.run_coroutine_threadsafe(voice_client.disconnect(), ctx.bot.loop)
+                            disconnect_task = ctx.bot.loop.create_task(self.disconnect_after_delay(ctx))
 
                     threading.Thread(target=self.play_music, args=(voice_client, url2, after_song)).start()
                     current_song = (url, title, webpage_url, thumbnail, duration)
@@ -150,6 +158,14 @@ class Music(commands.Cog):
 
             except youtube_dl.utils.DownloadError:
                 await ctx.send("Nie udało się znaleźć lub odtworzyć tej piosenki. Spróbuj jeszcze raz. 🎶")
+
+    # Funkcja rozłączenia po opóźnieniu
+    async def disconnect_after_delay(self, ctx):
+        await asyncio.sleep(300)  # 5 minut
+        if not ctx.voice_client.is_playing():
+            await ctx.voice_client.disconnect()
+            pink_log("Bot został rozłączony z powodu braku aktywności.")
+            await ctx.send("Bot został rozłączony z powodu braku aktywności. 🎶")
 
     # Komenda pomijania utworu
     @commands.command(name='skip', aliases=['s'], help='Przewiń do następnej piosenki w kolejce. Użyj: !skip lub !s')
@@ -178,12 +194,12 @@ class Music(commands.Cog):
         await ctx.send(f"Zapętlanie kolejki zostało {status}. 🎶")
 
     # Komenda zatrzymywania odtwarzania
-    @commands.command(name='stop', help='Zatrzymaj odtwarzanie muzyki. Użyj: !stop')
+    @commands.command(name='stop', aliases=['pause'], help='Wstrzymaj odtwarzanie muzyki. Użyj: !stop')
     async def stop(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
-            pink_log("Odtwarzanie zostało zatrzymane.")
-            await ctx.send("Odtwarzanie zostało zatrzymane. 🎶")
+            ctx.voice_client.pause()
+            pink_log("Odtwarzanie zostało wstrzymane")
+            await ctx.send("Wstrzymano odtwarzanie muzyki. 🎶")
 
     # Komenda wznawiania odtwarzania
     @commands.command(name='resume', help='Wznów odtwarzanie muzyki. Użyj: !resume')
