@@ -18,11 +18,12 @@ Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowis
 Bot korzysta z FFMPEG do odtwarzania muzyki, więc konieczne jest jego pobranie.
 
 1. Przejdź na stronę [FFmpeg](https://ffmpeg.org/download.html) i pobierz odpowiednią wersję dla swojego systemu operacyjnego.
-2. Wypakuj archiwum, które pobrałeś (np. za pomocą programu WinRAR lub 7-Zip).
+2. Wypakuj archiwum, które pobrałeś (np. za pomocą programu WinRAR lub 7-Zip). Archiwum wypakuj w folderze, gdzie masz plik discordbot.py
 3. Znajdziesz tam folder o nazwie `ffmpeg`. Wewnątrz niego jest podfolder `bin` - to tam znajdują się najważniejsze pliki programu.
 4. Aby bot mógł korzystać z FFMPEG, musisz dodać ten folder `bin` do zmiennych środowiskowych systemu (tzw. PATH). Dzięki temu system będzie wiedział, gdzie szukać FFMPEG, gdy będzie to potrzebne.
    - Kliknij prawym przyciskiem na "Mój komputer" > "Właściwości" > "Zaawansowane ustawienia systemu" > "Zmienna środowiskowa".
    - Znajdź zmienną `Path` i edytuj ją, dodając ścieżkę do folderu `bin` (np. `C:\ffmpeg\bin`).
+5. Co więcej w pliku music.py (folder cogs) musisz zmienić ścieżkę do FFMPEG. Musisz tam podać ścieżkę do pliku ffmpeg.exe. Jest to plik w folderze bin.
 
 ## Krok 3: Stwórz aplikację bota na stronie Discord Developer Portal
 
