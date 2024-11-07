@@ -1,3 +1,4 @@
 token.env
 /ffmpeg
+/cogs/__pycache__
 *.log
