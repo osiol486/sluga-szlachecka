@@ -1,12 +1,12 @@
 import os
+import sys  # Import sys, aby użyć sys.stderr
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import re
-import logging
-from colorama import Fore, Style
-
-
+from colorama import init, Fore, Style
+from loguru import logger
+import emoji
+from utils import parse_time, parse_minutes_seconds
 
 # Załaduj zmienne środowiskowe
 load_dotenv(dotenv_path='token.env')
@@ -19,39 +19,43 @@ intents.voice_states = True
 intents.message_content = True
 intents.members = True
 
-# Konfiguracja loggera
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',  # Format logu z datą, godziną i poziomem logowania
-    datefmt='%Y-%m-%d %H:%M:%S'  # Format daty i godziny
+# Konfiguracja loggera Loguru
+init(autoreset=True)  # Inicjalizacja colorama z automatycznym resetowaniem kolorów
+
+logger.remove()  # Usuń domyślny handler
+
+# Dodaj handler dla logowania do pliku
+logger.add(
+    "bot.log",
+    rotation="5 MB",  # Maksymalny rozmiar pliku logu, po przekroczeniu utworzy nowy plik
+    retention="7 days",  # Przechowuj logi przez 7 dni
+    level="INFO",  # Ustaw poziom logowania na INFO
+    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
 )
 
-# Ustawienie poziomu logowania dla loggera discord.py
-discord_logger = logging.getLogger('discord')
-discord_logger.setLevel(logging.WARNING)  # Możesz ustawić na WARNING lub ERROR, aby ograniczyć ilość logów
+# Dodaj handler dla logowania do konsoli z kolorem
+logger.add(
+    sys.stderr,
+    level="INFO",
+    format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
+    colorize=True
+)
 
 # Utworzenie instancji bota
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Dodanie filtra, aby zapobiegać duplikatom logów
-class NoDuplicateFilter(logging.Filter):
-    def __init__(self):
-        self.logged_messages = set()
-
-    def filter(self, record):
-        if record.msg in self.logged_messages:
-            return False
-        self.logged_messages.add(record.msg)
-        return True
-
-# Dodanie filtra do loggera głównego
-logger = logging.getLogger()
-logger.addFilter(NoDuplicateFilter())
+def guild_log_prefix(ctx):
+    """Tworzy prefiks logów zawierający nazwę i ID serwera."""
+    guild_name = ctx.guild.name if ctx.guild else "Brak serwera"
+    guild_id = ctx.guild.id if ctx.guild else "Brak ID"
+    return f"[{guild_name} ({guild_id})]"
 
 @bot.event
 async def on_ready():
-    print(Fore.GREEN + f'Bot {bot.user.name} został uruchomiony!' + Style.RESET_ALL)
-    await load_cogs()
+    logger.success(f'Bot {bot.user.name} został uruchomiony poprawnie!')
+    await bot.load_extension('cogs.music')  # Załaduj cogs muzyczne z music.py
+    await bot.load_extension('cogs.moderation')  # Załaduj cogs moderacyjne z moderation.py
+    await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
 
 @bot.event
 async def on_guild_join(guild):
@@ -62,56 +66,40 @@ async def on_guild_join(guild):
     if role_exists is None:
         permissions = discord.Permissions(administrator=True)  # Uprawnienia administratora
         role = await guild.create_role(name="Sługa Szlachecka", permissions=permissions, reason="Bot musi mieć dostęp administracyjny")
-        print(f'Ranga "{role.name}" została utworzona.')
+        logger.info(f'Ranga "{role.name}" została utworzona na serwerze {guild.name} (ID: {guild.id}).')
 
         # Przypisz rangę do bota
         bot_member = guild.get_member(bot.user.id)
         if bot_member:
             await bot_member.add_roles(role)
-            print(f'Ranga "{role.name}" została przypisana do bota.')
+            logger.info(f'Ranga "{role.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
     else:
         # Jeśli ranga istnieje, przypisz ją
         bot_member = guild.get_member(bot.user.id)
         if bot_member and role_exists:
             await bot_member.add_roles(role_exists)
-            print(f'Ranga "{role_exists.name}" została przypisana do bota.')
+            logger.info(f'Ranga "{role_exists.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
+
+# Przykład dodania logów do komend
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    # Sprawdź, czy wiadomość zaczyna się od prefixu bota i nie jest komendą
+    if message.content.startswith(bot.command_prefix) and not message.content[len(bot.command_prefix):].split(" ")[0] in bot.all_commands:
+        guild_prefix = guild_log_prefix(message)
+        logger.info(f"{guild_prefix} Nie rozpoznano komendy: {message.content}")
+        await message.add_reaction("❓")  # Dodaj emoji pytania, gdy komenda nie istnieje
+        await message.channel.send("Nie rozpoznano komendy. Użyj !help, aby zobaczyć dostępne komendy.")
+    
+    # Przekaż obsługę komend do pozostałej części kodu bota
+    await bot.process_commands(message)
 
 # Kolory dla embedów
 EMBED_COLOR = 0xFFEF0A  # żółty
 
-# Funkcja do parsowania czasu (przykład funkcji użytkowej)
-def parse_time(time_str):
-    match = re.match(r"(\d+)([smhd])", time_str)
-    if match:
-        value, unit = match.groups()
-        value = int(value)
-        if unit == 's':
-            return value
-        elif unit == 'm':
-            return value * 60
-        elif unit == 'h':
-            return value * 3600
-        elif unit == 'd':
-            return value * 86400
-    return None
-
-# Funkcja do parsowania czasu w formacie MM:SS (przykład funkcji użytkowej)
-def parse_minutes_seconds(time_str):
-    match = re.match(r"(\d+):(\d+)", time_str)
-    if match:
-        minutes, seconds = match.groups()
-        return int(minutes) * 60 + int(seconds)
-    return None
-
 bot.remove_command('help')
-
-
-# Załaduj cogs
-async def load_cogs():
-    await bot.load_extension('cogs.music')  # Załaduj cogs muzyczne z music.py
-    await bot.load_extension('cogs.moderation')  # Załaduj cogs moderacyjne z moderation.py
-    await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
-
 
 # Uruchomienie bota
 bot.run(TOKEN)

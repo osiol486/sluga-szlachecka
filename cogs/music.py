@@ -1,23 +1,72 @@
+import os
+import sys
 import discord
 from discord.ext import commands
 import yt_dlp as youtube_dl
 import asyncio
 import re
 import threading
-import logging
+import json
 from colorama import Fore, Style
-from datetime import timedelta, datetime
+from loguru import logger
+from utils import parse_time, parse_minutes_seconds
 
-# Konfiguracja loggera
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+# Usuń poprzednią konfigurację loggera
+logger.remove()
+
+# Dodaj handler do logowania do pliku bez kolorów
+logger.add(
+    "bot.log",
+    rotation="5 MB",
+    retention="7 days",
+    level="INFO",
+    format="{time} {level} {message}",
+    colorize=False
 )
 
-# Funkcja logująca wiadomości na różowo
-def pink_log(message):
-    logging.info(f"{Fore.MAGENTA}{message}{Style.RESET_ALL}")
+# Dodaj handler do logowania w konsoli z kolorami
+logger.add(
+    sys.stderr,
+    level="INFO",
+    format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
+    colorize=True
+)
+
+# Funkcja logująca wiadomości na poziomie INFO z kolorem magenta
+def pink_log(ctx, message):
+    guild_info = f"[{ctx.guild.name} ({ctx.guild.id})]" if ctx.guild else "[Brak serwera]"
+    logger.info(f"{guild_info} {message}")
+
+# Folder do przechowywania cache'u
+CACHE_FOLDER = "cache"
+CACHE_FILE_PATH = os.path.join(CACHE_FOLDER, "music_cache.json")
+
+# Sprawdź, czy folder cache istnieje, jeśli nie - utwórz go
+if not os.path.exists(CACHE_FOLDER):
+    os.makedirs(CACHE_FOLDER)
+
+# Inicjalizacja cache'u dla utworów
+try:
+    # Odczytaj cache z pliku, jeśli istnieje
+    if os.path.exists(CACHE_FILE_PATH):
+        with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
+            song_cache = json.load(f)
+        logger.info('Załadowano cache utworów.')
+    else:
+        song_cache = {}
+        logger.info('Cache utworów jest pusty.')
+except (FileNotFoundError, json.JSONDecodeError) as e:
+    song_cache = {}
+    logger.warning(f'Nie znaleziono pliku cache lub plik jest uszkodzony ({e}), zaczynamy od pustego cache.')
+
+# Funkcja zapisywania cache
+def save_cache():
+    try:
+        with open(CACHE_FILE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(song_cache, f, ensure_ascii=False, indent=4)
+        logger.info('Cache został zapisany poprawnie.')
+    except Exception as e:
+        logger.error(f'Błąd podczas zapisywania cache: {e}')
 
 # Opcje FFMPEG
 FFMPEG_OPTIONS = {
@@ -42,33 +91,8 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # Funkcja do parsowania czasu
-    def parse_time(self, time_str):
-        match = re.match(r"(\d+)([smhd])", time_str)
-        if match:
-            value, unit = match.groups()
-            value = int(value)
-            if unit == 's':
-                return value
-            elif unit == 'm':
-                return value * 60
-            elif unit == 'h':
-                return value * 3600
-            elif unit == 'd':
-                return value * 86400
-        return None
-
-    # Funkcja do parsowania czasu w formacie MM:SS
-    def parse_minutes_seconds(self, time_str):
-        match = re.match(r"(\d+):(\d+)", time_str)
-        if match:
-            minutes, seconds = match.groups()
-            return int(minutes) * 60 + int(seconds)
-        return None
-
     # Funkcja do odtwarzania muzyki w tle
     def play_music(self, voice_client, source, after_callback):
-        pink_log("Odtwarzanie muzyki w tle")
         voice_client.play(discord.FFmpegPCMAudio(executable="C:/Users/broga/Desktop/Programming/gpt dsc bot/ffmpeg/bin/ffmpeg.exe", source=source, **FFMPEG_OPTIONS), after=after_callback)
 
     # Komenda odtwarzania muzyki
@@ -99,72 +123,85 @@ class Music(commands.Cog):
         # Łączenie URL jeśli użytkownik podał frazę zamiast linku
         url = ' '.join(url)
 
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'default_search': 'ytsearch',  # Domyślne wyszukiwanie na YouTube
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
+        # Sprawdź, czy utwór jest już w cache
+        if url in song_cache:
+            info = song_cache[url]
+            logger.info(f'Użycie cache dla utworu: {info.get("title", "Nieznany tytuł")}')
+        else:
+            # Jeśli utwór nie jest w cache, wykonujemy zapytanie do YouTube
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'noplaylist': True,
+                'default_search': 'ytsearch',  # Domyślne wyszukiwanie na YouTube
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'quiet': True  # Ustawienie 'quiet', aby ograniczyć logi yt_dlp
+            }
 
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            try:
-                info = ydl.extract_info(url, download=False)
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                try:
+                    info = ydl.extract_info(url, download=False)
 
-                # Jeśli to wyszukiwanie, bierzemy pierwszy wynik
-                if 'entries' in info:
-                    info = info['entries'][0]
+                    # Jeśli to wyszukiwanie, bierzemy pierwszy wynik
+                    if 'entries' in info:
+                        info = info['entries'][0]
 
-                url2 = info['url']
-                title = info.get('title', 'Nieznany tytuł')
-                webpage_url = info.get('webpage_url', '')
-                thumbnail = info.get('thumbnail', '')
-                duration = info.get('duration', 0)
+                    # Zapisz informacje o utworze w cache'u
+                    song_cache[url] = info
+                    logger.info(f'Dodano do cache utwór: {info.get("title", "Nieznany tytuł")}')
+                    save_cache()
 
-                # Przygotowanie embedu z informacjami o utworze
-                embed = discord.Embed(title="Odtwarzanie muzyki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
-                embed.set_thumbnail(url=thumbnail)
-                embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
+                except youtube_dl.utils.DownloadError:
+                    await ctx.send("Nie udało się znaleźć lub odtworzyć tej piosenki. Spróbuj jeszcze raz. 🎶")
+                    return
 
-                # Dodanie do kolejki, jeśli coś już jest odtwarzane
-                if voice_client.is_playing() or voice_client.is_paused():
-                    queues.append((url, title, webpage_url, thumbnail, duration))
-                    embed = discord.Embed(title="Dodano do kolejki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
-                    embed.set_thumbnail(url=thumbnail)
-                    embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
-                    await ctx.send(embed=embed)
-                else:
-                    # Odtwarzanie muzyki
-                    def after_song(err):
-                        global loop_song, loop_queue, disconnect_task
-                        if loop_song:
-                            threading.Thread(target=self.play_music, args=(voice_client, url2, after_song)).start()
-                        elif queues and loop_queue:
-                            next_song = queues.pop(0)
-                            queues.append(next_song)
-                            ctx.bot.loop.create_task(self.play(ctx, next_song[0]))
-                        elif queues:
-                            next_song = queues.pop(0)
-                            ctx.bot.loop.create_task(self.play(ctx, next_song[0]))
-                        else:
-                            disconnect_task = ctx.bot.loop.create_task(self.disconnect_after_delay(ctx))
+        # Odtwarzanie utworu
+        url2 = info['url']
+        title = info.get('title', 'Nieznany tytuł')
+        webpage_url = info.get('webpage_url', '')
+        thumbnail = info.get('thumbnail', '')
+        duration = info.get('duration', 0)
 
+        # Przygotowanie embedu z informacjami o utworze
+        embed = discord.Embed(title="Odtwarzanie muzyki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
+        embed.set_thumbnail(url=thumbnail)
+        embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
+
+        if voice_client.is_playing() or voice_client.is_paused():
+            queues.append((url, title, webpage_url, thumbnail, duration))
+            embed = discord.Embed(title="Dodano do kolejki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
+            embed.set_thumbnail(url=thumbnail)
+            embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
+            await ctx.send(embed=embed)
+        else:
+            def after_song(err):
+                global loop_song, loop_queue, disconnect_task
+                if loop_song:
                     threading.Thread(target=self.play_music, args=(voice_client, url2, after_song)).start()
-                    current_song = (url, title, webpage_url, thumbnail, duration)
-                    await ctx.send(embed=embed)
+                elif queues and loop_queue:
+                    next_song = queues.pop(0)
+                    queues.append(next_song)
+                    ctx.bot.loop.create_task(self.play(ctx, next_song[0]))
+                elif queues:
+                    next_song = queues.pop(0)
+                    ctx.bot.loop.create_task(self.play(ctx, next_song[0]))
+                else:
+                    disconnect_task = ctx.bot.loop.create_task(self.disconnect_after_delay(ctx))
 
-            except youtube_dl.utils.DownloadError:
-                await ctx.send("Nie udało się znaleźć lub odtworzyć tej piosenki. Spróbuj jeszcze raz. 🎶")
+            threading.Thread(target=self.play_music, args=(voice_client, url2, after_song)).start()
+            current_song = (url, title, webpage_url, thumbnail, duration)
+            pink_log(ctx, "Odtwarzanie muzyki w tle")
+            await ctx.send(embed=embed)
 
     # Funkcja rozłączenia po opóźnieniu
     async def disconnect_after_delay(self, ctx):
         await asyncio.sleep(300)  # 5 minut
         if not ctx.voice_client.is_playing():
             await ctx.voice_client.disconnect()
-            pink_log("Bot został rozłączony z powodu braku aktywności.")
+            pink_log(ctx, "Bot został rozłączony z powodu braku aktywności.")
             await ctx.send("Bot został rozłączony z powodu braku aktywności. 🎶")
 
     # Komenda pomijania utworu
@@ -172,7 +209,7 @@ class Music(commands.Cog):
     async def skip(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.stop()
-            pink_log("Utwór pominięty przez użytkownika.")
+            pink_log(ctx, "Utwór pominięty przez użytkownika.")
             await ctx.send("Pominięto aktualnie odtwarzaną piosenkę. 🎶")
 
     # Komenda zapętlania utworu
@@ -181,7 +218,7 @@ class Music(commands.Cog):
         global loop_song
         loop_song = not loop_song
         status = "włączone" if loop_song else "wyłączone"
-        pink_log(f"Zapętlanie utworu: {status}")
+        pink_log(ctx, f"Zapętlanie utworu: {status}")
         await ctx.send(f"Zapętlanie utworu zostało {status}. 🎶")
 
     # Komenda zapętlania kolejki
@@ -190,7 +227,7 @@ class Music(commands.Cog):
         global loop_queue
         loop_queue = not loop_queue
         status = "włączone" if loop_queue else "wyłączone"
-        pink_log(f"Zapętlanie kolejki: {status}")
+        pink_log(ctx, f"Zapętlanie kolejki: {status}")
         await ctx.send(f"Zapętlanie kolejki zostało {status}. 🎶")
 
     # Komenda zatrzymywania odtwarzania
@@ -198,7 +235,7 @@ class Music(commands.Cog):
     async def stop(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.pause()
-            pink_log("Odtwarzanie zostało wstrzymane")
+            pink_log(ctx, "Odtwarzanie zostało wstrzymane")
             await ctx.send("Wstrzymano odtwarzanie muzyki. 🎶")
 
     # Komenda wznawiania odtwarzania
@@ -206,7 +243,7 @@ class Music(commands.Cog):
     async def resume(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_paused():
             ctx.voice_client.resume()
-            pink_log("Odtwarzanie zostało wznowione.")
+            pink_log(ctx, "Odtwarzanie zostało wznowione.")
             await ctx.send("Wznowiono odtwarzanie muzyki. 🎶")
 
     # Komenda rozłączenia bota z kanału głosowego
@@ -214,7 +251,7 @@ class Music(commands.Cog):
     async def disconnect(self, ctx):
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
-            pink_log("Bot został rozłączony z kanału głosowego.")
+            pink_log(ctx, "Bot został rozłączony z kanału głosowego.")
             await ctx.send("Bot został rozłączony z kanału głosowego. 🎶")
 
     # Komenda wyświetlania kolejki
@@ -226,7 +263,7 @@ class Music(commands.Cog):
             queue_str = "\n".join([f"{idx + 1}. [{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}" for idx, (_, title, webpage_url, _, duration) in enumerate(queues)])
             embed = discord.Embed(title="Kolejka piosenek", description=now_playing_str + "\n**Kolejne piosenki**\n" + queue_str, color=EMBED_COLOR)
             embed.set_thumbnail(url=thumbnail)
-            pink_log("Wyświetlenie kolejki piosenek.")
+            pink_log(ctx, "Wyświetlenie kolejki piosenek.")
             await ctx.send(embed=embed)
         else:
             await ctx.send("Kolejka jest pusta. 🎶")
