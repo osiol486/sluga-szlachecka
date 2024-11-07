@@ -1,6 +1,7 @@
 # Instrukcja instalacji bota
 
-**Informuję, że instrukcja dotyczy instalacji na systemie Windows.** 
+**1. Informuję, że instrukcja dotyczy instalacji na systemie Windows.
+2. Czemu instrukcja instalacji bota, a nie link do zaproszenia go? Bota stworzyłem 4fun za pomocą chatu GPT, nie mam wiecznie włączonego komputera, aby bot działał, a discorda tak właściwie nie używam już praktycznie, więc tym bardziej bot jest przez większość czasu wyłączony.**
 
 ## Wymagania wstępne
 Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
