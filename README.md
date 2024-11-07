@@ -2,13 +2,15 @@
 
 **1. Informuję, że instrukcja dotyczy instalacji na systemie Windows.**
 
-**2. Czemu instrukcja instalacji bota, a nie link do zaproszenia go? Bota stworzyłem 4fun za pomocą chatu GPT, nie mam wiecznie włączonego komputera, aby bot działał, a discorda tak właściwie nie używam już praktycznie, więc tym bardziej bot jest przez większość czasu wyłączony.**
+**2. Czemu instrukcja instalacji bota, a nie link do zaproszenia go?** Bota stworzyłem 4fun za pomocą chatu GPT, nie mam wiecznie włączonego komputera, aby bot działał, a discorda tak właściwie nie używam już praktycznie, więc tym bardziej bot jest przez większość czasu wyłączony.
 
 ## Wymagania wstępne
 Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
 
+- polecam Visual Studio Code do edytowania kodu oraz do uruchamiania bota
 - Python 3.8 lub nowszy
 - FFMPEG (do obsługi dźwięku)
+- Libopus.dll (też do obsługi dźwięku)
 - Token bota Discord (wygenerowany na stronie Discord Developer Portal)
 
 ## Krok 1: Zainstaluj Pythona
@@ -36,30 +38,20 @@ Bot korzysta z FFMPEG do odtwarzania muzyki, więc konieczne jest jego pobranie.
 3. Wprowadź nazwę bota i kliknij "Create".
 4. Przejdź do zakładki "Bot" i kliknij "Add Bot", aby dodać bota do swojej aplikacji.
 5. Skopiuj token bota – będzie potrzebny do skonfigurowania bota.
-6. Przejdź do zakładki "OAuth2" > "URL Generator". Zaznacz uprawnienia bota, takie jak `bot` oraz `administrator`, a następnie wygeneruj i skopiuj link do zaproszenia bota na swój serwer.
+6. Przejdź do zakładki "OAuth2" > "URL Generator". Zaznacz uprawnienia bota, takie jak `bot` oraz `administrator` (chyba że chcesz botowi nadać konkretne permisje, a nie od razu admina, to wybierz sobie jakieś poszczególne permisje, które musi posiadać bot), a następnie wygeneruj i skopiuj link do zaproszenia bota na swój serwer.
 7. Otwórz wygenerowany link i zaproś bota na swój serwer Discord.
 
-## Krok 4: Klonowanie repozytorium
+## Krok 4: Pobranie plików bota
 
-Aby pobrać kod źródłowy bota, musisz go sklonować (pobrać na swój komputer). W tym celu:
-
-1. Otwórz wiersz poleceń (`CMD`) lub terminal, np. w systemie Windows możesz nacisnąć klawisz Windows, wpisać "cmd" i uruchomić Wiersz polecenia.
-2. Przejdź do folderu, w którym chcesz umieścić kod bota, używając polecenia `cd` (np. `cd C:\TwojeProjekty`).
-3. Następnie wpisz poniższe polecenie, aby sklonować repozytorium:
-
-   ```bash
-   git clone https://github.com/nazwauzytkownika/nazwarepozytorium.git
-   ```
-
-4. Przejdź do katalogu z botem:
-
-   ```bash
-   cd nazwarepozytorium
-   ```
+Aby pobrać kod źródłowy bota, możesz skorzystać z opcji pobrania pliku .zip z repozytorium.
+1. Przejdź na [stronę repozytorium bota na GitHubie](https://github.com/osiol486/discordbot/).
+2. kliknij przycisk **Code** (Zielony przycisk na stronie repozytorium).
+3. Wybierz **Download ZIP**.
+4. Rozpakuj pobrany plik `.zip` w miejscu, w którym chcesz przechowywać pliki bota.
 
 ## Krok 5: Zainstaluj wymagane biblioteki
 
-Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu, w katalogu projektu, wpisz poniższe polecenia:
+Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu (`CMD`), w katalogu projektu (czyli musisz przez `CMD` wejść do folderu, gdzie masz pobranego bota, więc musisz wpisać komendę `cd C:/lokalizacja-twojego-projektu`), wpisz poniższe polecenia:
 
    ```bash
    pip install discord.py
@@ -120,4 +112,6 @@ Jeśli bot nie działa poprawnie, upewnij się, że:
 - Wszystkie zależności zostały poprawnie zainstalowane.
 - FFMPEG jest zainstalowany i jego ścieżka jest dodana do zmiennych środowiskowych systemu.
 - Token bota jest poprawny.
+
+Jeżeli dalej po powyższych krokach nie działa, napisz do mnie (discord: osiol486) albo może chat GPT ci pomoże.
 
