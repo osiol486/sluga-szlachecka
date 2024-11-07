@@ -54,11 +54,13 @@ Aby pobrać kod źródłowy bota, musisz go sklonować (pobrać na swój kompute
 
 ## Krok 5: Zainstaluj wymagane biblioteki
 
-W katalogu projektu znajduje się plik `requirements.txt`, który zawiera listę wymaganych bibliotek do uruchomienia bota. Aby je zainstalować, użyj poniższego polecenia:
+Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu, w katalogu projektu, wpisz poniższe polecenia:
 
-```bash
-pip install -r requirements.txt
-```
+'pip install discord.py'
+'pip install youtube-dl'
+'pip install yt-dlp'
+'pip install python-dotenv'
+'pip install colorama'
 
 ## Krok 6: Konfiguracja tokena bota
 
