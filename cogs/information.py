@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import re
 import asyncio
+import psutil
 import logging
 
 
@@ -68,6 +69,22 @@ class Information(commands.Cog):
 
         # Wysłanie embeda
         await ctx.send(embed=embed)
+
+    @commands.command(name='ping', help='Sprawdź opóźnienie bota. Użyj: !ping')
+    async def ping(self, ctx):
+        latency = round(self.bot.latency * 1000)  # Opóźnienie w milisekundach
+        await ctx.send(f"Pong! 🏓 Opóźnienie wynosi: {latency} ms")
+
+    @commands.command(name='memory', help='Pokaż zużycie pamięci przez bota. Użyj: !memory')
+    async def memory(self, ctx):
+        process = psutil.Process()
+        memory_info = process.memory_info()
+
+        used_memory_mb = memory_info.rss / 1024 / 1024  # Zużywana pamięć w MB
+        total_memory_mb = psutil.virtual_memory().total / 1024 / 1024  # Całkowita dostępna pamięć w MB
+
+        await ctx.send(f"Bot używa: {used_memory_mb:.2f} MB RAM z dostępnych: {total_memory_mb:.2f} MB RAM")
+
 
 # Funkcja setup, która pozwala zarejestrować cogs w bota
 async def setup(bot):

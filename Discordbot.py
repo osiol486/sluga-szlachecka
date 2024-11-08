@@ -66,19 +66,19 @@ async def on_guild_join(guild):
     if role_exists is None:
         permissions = discord.Permissions(administrator=True)  # Uprawnienia administratora
         role = await guild.create_role(name="Sługa Szlachecka", permissions=permissions, reason="Bot musi mieć dostęp administracyjny")
-        logger.info(f'Ranga "{role.name}" została utworzona na serwerze {guild.name} (ID: {guild.id}).')
+        logger.debug(f'Ranga "{role.name}" została utworzona na serwerze {guild.name} (ID: {guild.id}).')
 
         # Przypisz rangę do bota
         bot_member = guild.get_member(bot.user.id)
         if bot_member:
             await bot_member.add_roles(role)
-            logger.info(f'Ranga "{role.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
+            logger.debug(f'Ranga "{role.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
     else:
         # Jeśli ranga istnieje, przypisz ją
         bot_member = guild.get_member(bot.user.id)
         if bot_member and role_exists:
             await bot_member.add_roles(role_exists)
-            logger.info(f'Ranga "{role_exists.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
+            logger.debug(f'Ranga "{role_exists.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
 
 # Przykład dodania logów do komend
 @bot.event
@@ -89,7 +89,7 @@ async def on_message(message):
     # Sprawdź, czy wiadomość zaczyna się od prefixu bota i nie jest komendą
     if message.content.startswith(bot.command_prefix) and not message.content[len(bot.command_prefix):].split(" ")[0] in bot.all_commands:
         guild_prefix = guild_log_prefix(message)
-        logger.info(f"{guild_prefix} Nie rozpoznano komendy: {message.content}")
+        logger.debug(f"{guild_prefix} Nie rozpoznano komendy: {message.content}")
         await message.add_reaction("❓")  # Dodaj emoji pytania, gdy komenda nie istnieje
         await message.channel.send("Nie rozpoznano komendy. Użyj !help, aby zobaczyć dostępne komendy.")
     
