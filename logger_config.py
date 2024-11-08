@@ -22,3 +22,9 @@ def configure_logger():
         format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
         colorize=True
     )
+    
+    def guild_log_prefix(ctx):
+        """Tworzy prefiks logów zawierający nazwę i ID serwera."""
+        guild_name = ctx.guild.name if ctx.guild else "Brak serwera"
+        guild_id = ctx.guild.id if ctx.guild else "Brak ID"
+        return f"[{guild_name} ({guild_id})]"
