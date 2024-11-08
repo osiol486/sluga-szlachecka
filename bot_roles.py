@@ -1,4 +1,3 @@
-# role_management/bot_roles.py
 import discord
 from discord.ext import commands
 
