@@ -3,7 +3,7 @@ from discord.ext import commands
 
 async def check_and_assign_role(bot: commands.Bot, guild: discord.Guild):
     # Sprawdź, czy bot ma już określoną rolę
-    bot_role_name = "Bot Helper"
+    bot_role_name = "Sługa Szlachecka"
     existing_role = discord.utils.get(guild.roles, name=bot_role_name)
 
     # Jeśli nie ma roli, utwórz ją
