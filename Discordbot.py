@@ -27,8 +27,8 @@ logger.remove()  # Usuń domyślny handler
 # Dodaj handler dla logowania do pliku
 logger.add(
     "bot.log",
-    rotation="5 MB",  # Maksymalny rozmiar pliku logu, po przekroczeniu utworzy nowy plik
-    retention="7 days",  # Przechowuj logi przez 7 dni
+    rotation="30 MB",  # Maksymalny rozmiar pliku logu, po przekroczeniu utworzy nowy plik
+    retention="14 days",  # Przechowuj logi przez 14 dni
     level="INFO",  # Ustaw poziom logowania na INFO
     format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
 )
