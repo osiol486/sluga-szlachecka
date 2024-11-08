@@ -18,7 +18,7 @@ logger.remove()
 # Dodaj handler do logowania do pliku bez kolorów
 logger.add(
     "bot.log",
-    rotation="5 MB",
+    rotation="15 MB",
     retention="7 days",
     level="INFO",
     format="{time} {level} {message}",
@@ -37,10 +37,6 @@ logger.add(
 def pink_log(ctx, message):
     guild_info = f"[{ctx.guild.name} ({ctx.guild.id})]" if ctx.guild else "[Brak serwera]"
     logger.debug(f"{guild_info} {message}")
-
-import os
-import json
-from loguru import logger
 
 # Folder do przechowywania cache'u
 CACHE_FOLDER = "cache"
