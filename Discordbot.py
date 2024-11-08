@@ -24,23 +24,6 @@ init(autoreset=True)  # Inicjalizacja colorama z automatycznym resetowaniem kolo
 
 logger.remove()  # Usuń domyślny handler
 
-# Dodaj handler dla logowania do pliku
-logger.add(
-    "bot.log",
-    rotation="30 MB",  # Maksymalny rozmiar pliku logu, po przekroczeniu utworzy nowy plik
-    retention="14 days",  # Przechowuj logi przez 14 dni
-    level="INFO",  # Ustaw poziom logowania na INFO
-    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
-)
-
-# Dodaj handler dla logowania do konsoli z kolorem
-logger.add(
-    sys.stderr,
-    level="INFO",
-    format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
-    colorize=True
-)
-
 # Utworzenie instancji bota
 bot = commands.Bot(command_prefix='!', intents=intents)
 
