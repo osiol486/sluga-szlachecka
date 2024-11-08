@@ -38,9 +38,14 @@ def pink_log(ctx, message):
     guild_info = f"[{ctx.guild.name} ({ctx.guild.id})]" if ctx.guild else "[Brak serwera]"
     logger.debug(f"{guild_info} {message}")
 
+import os
+import json
+from loguru import logger
+
 # Folder do przechowywania cache'u
 CACHE_FOLDER = "cache"
 CACHE_FILE_PATH = os.path.join(CACHE_FOLDER, "music_cache.json")
+CACHE_SIZE_LIMIT = 50 * 1024 * 1024  # Limit wielkości cache w bajtach
 
 # Sprawdź, czy folder cache istnieje, jeśli nie - utwórz go
 if not os.path.exists(CACHE_FOLDER):
@@ -50,9 +55,14 @@ if not os.path.exists(CACHE_FOLDER):
 try:
     # Odczytaj cache z pliku, jeśli istnieje
     if os.path.exists(CACHE_FILE_PATH):
-        with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
-            song_cache = json.load(f)
-        logger.debug('Załadowano cache utworów.')
+        if os.path.getsize(CACHE_FILE_PATH) > CACHE_SIZE_LIMIT:
+            logger.warning(f'Plik cache przekroczył limit {CACHE_SIZE_LIMIT / (1024 * 1024)} MB, usuwanie pliku.')
+            os.remove(CACHE_FILE_PATH)
+            song_cache = {}
+        else:
+            with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
+                song_cache = json.load(f)
+            logger.debug('Załadowano cache utworów.')
     else:
         song_cache = {}
         logger.debug('Cache utworów jest pusty.')
@@ -60,9 +70,15 @@ except (FileNotFoundError, json.JSONDecodeError) as e:
     song_cache = {}
     logger.error(f'Nie znaleziono pliku cache lub plik jest uszkodzony ({e}), zaczynamy od pustego cache.')
 
-# Funkcja zapisywania cache
+# Funkcja zapisywania cache z limitem rozmiaru
 def save_cache():
     try:
+        # Sprawdzenie rozmiaru pliku cache, jeśli istnieje
+        if os.path.exists(CACHE_FILE_PATH) and os.path.getsize(CACHE_FILE_PATH) > CACHE_SIZE_LIMIT:
+            logger.warning(f'Plik cache przekroczył limit {CACHE_SIZE_LIMIT / (1024 * 1024)} MB, usuwanie pliku.')
+            os.remove(CACHE_FILE_PATH)
+
+        # Zapisz cache, jeśli rozmiar nie przekroczył limitu
         with open(CACHE_FILE_PATH, 'w', encoding='utf-8') as f:
             json.dump(song_cache, f, ensure_ascii=False, indent=4)
         logger.debug('Cache został zapisany poprawnie.')
