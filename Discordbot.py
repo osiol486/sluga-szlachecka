@@ -7,6 +7,10 @@ from colorama import init, Fore, Style
 from loguru import logger
 import emoji
 from utils import parse_time, parse_minutes_seconds
+from logging_handlers.logger_config import configure_logger
+
+# Konfiguracja loggera
+configure_logger()
 
 # Załaduj zmienne środowiskowe
 load_dotenv(dotenv_path='token.env')
