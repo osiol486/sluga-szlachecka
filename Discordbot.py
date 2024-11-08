@@ -43,6 +43,8 @@ async def on_ready():
     await bot.load_extension('cogs.music')  # Załaduj cogs muzyczne z music.py
     await bot.load_extension('cogs.moderation')  # Załaduj cogs moderacyjne z moderation.py
     await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
+    await bot.load_extension('cogs.utility')
+# Załaduj cogs utility z utility.py
 
 @bot.event
 async def on_guild_join(guild):
