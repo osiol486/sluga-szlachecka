@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import requests
 from bs4 import BeautifulSoup
+import openai
 
 class Utility(commands.Cog):
     def __init__(self, bot):
