@@ -12,26 +12,6 @@ from loguru import logger
 from utils import parse_time, parse_minutes_seconds
 import time
 
-# Usuń poprzednią konfigurację loggera
-logger.remove()
-
-# Dodaj handler do logowania do pliku bez kolorów
-logger.add(
-    "bot.log",
-    rotation="15 MB",
-    retention="7 days",
-    level="INFO",
-    format="{time} {level} {message}",
-    colorize=False
-)
-
-# Dodaj handler do logowania w konsoli z kolorami
-logger.add(
-    sys.stderr,
-    level="INFO",
-    format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level}</level> | <level>{message}</level>",
-    colorize=True
-)
 
 # Funkcja logująca wiadomości na poziomie DEBUG z kolorem magenta
 def pink_log(ctx, message):
@@ -41,7 +21,6 @@ def pink_log(ctx, message):
 # Folder do przechowywania cache'u
 CACHE_FOLDER = "cache"
 CACHE_FILE_PATH = os.path.join(CACHE_FOLDER, "music_cache.json")
-CACHE_SIZE_LIMIT = 50 * 1024 * 1024  # Limit wielkości cache w bajtach
 
 # Sprawdź, czy folder cache istnieje, jeśli nie - utwórz go
 if not os.path.exists(CACHE_FOLDER):
@@ -51,14 +30,9 @@ if not os.path.exists(CACHE_FOLDER):
 try:
     # Odczytaj cache z pliku, jeśli istnieje
     if os.path.exists(CACHE_FILE_PATH):
-        if os.path.getsize(CACHE_FILE_PATH) > CACHE_SIZE_LIMIT:
-            logger.warning(f'Plik cache przekroczył limit {CACHE_SIZE_LIMIT / (1024 * 1024)} MB, usuwanie pliku.')
-            os.remove(CACHE_FILE_PATH)
-            song_cache = {}
-        else:
-            with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
-                song_cache = json.load(f)
-            logger.debug('Załadowano cache utworów.')
+        with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
+            song_cache = json.load(f)
+        logger.debug('Załadowano cache utworów.')
     else:
         song_cache = {}
         logger.debug('Cache utworów jest pusty.')
@@ -66,15 +40,9 @@ except (FileNotFoundError, json.JSONDecodeError) as e:
     song_cache = {}
     logger.error(f'Nie znaleziono pliku cache lub plik jest uszkodzony ({e}), zaczynamy od pustego cache.')
 
-# Funkcja zapisywania cache z limitem rozmiaru
+# Funkcja zapisywania cache
 def save_cache():
     try:
-        # Sprawdzenie rozmiaru pliku cache, jeśli istnieje
-        if os.path.exists(CACHE_FILE_PATH) and os.path.getsize(CACHE_FILE_PATH) > CACHE_SIZE_LIMIT:
-            logger.warning(f'Plik cache przekroczył limit {CACHE_SIZE_LIMIT / (1024 * 1024)} MB, usuwanie pliku.')
-            os.remove(CACHE_FILE_PATH)
-
-        # Zapisz cache, jeśli rozmiar nie przekroczył limitu
         with open(CACHE_FILE_PATH, 'w', encoding='utf-8') as f:
             json.dump(song_cache, f, ensure_ascii=False, indent=4)
         logger.debug('Cache został zapisany poprawnie.')
@@ -109,6 +77,7 @@ class Music(commands.Cog):
         self.voice_client = None
         self.current_song = None
         self.start_time = None
+        self.history = []
 
     # Funkcja do odtwarzania muzyki w tle
     def play_music(self, voice_client, source, after_callback):
@@ -298,19 +267,106 @@ class Music(commands.Cog):
             else:
                 await ctx.send("Musisz być na tym samym kanale głosowym, aby rozłączyć bota. 🎶")
 
-    # Komenda wyświetlania kolejki
     @commands.command(name='queue', aliases=['q'], help='Wyświetl listę piosenek w kolejce. Użyj: !queue lub !q')
-    async def queue_list(self, ctx):
-        if current_song:
-            _, title, webpage_url, thumbnail, duration = current_song
-            now_playing_str = f"**Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n"
-            queue_str = "\n".join([f"{idx + 1}. [{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}" for idx, (_, title, webpage_url, _, duration) in enumerate(self.queue)])
-            embed = discord.Embed(title="Kolejka piosenek", description=now_playing_str + "\n**Kolejne piosenki**\n" + queue_str, color=EMBED_COLOR)
-            embed.set_thumbnail(url=thumbnail)
-            logger.debug("Wyświetlenie kolejki piosenek.")
+    async def queue_list(self, ctx, page: int = 1):
+        if not self.queue and not self.current_song:
+            await ctx.send("Kolejka jest pusta. 🎶")
+            return
+
+        # Wyświetl aktualnie odtwarzany utwór
+        queue_str = ""
+        if self.current_song:
+            title = self.current_song['title']
+            webpage_url = self.current_song['webpage_url']
+            duration = self.current_song['duration']
+            queue_str += f"**Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n\n"
+
+        # Tworzenie stron
+        items_per_page = 10
+        total_pages = (len(self.queue) + items_per_page - 1) // items_per_page
+        page = max(1, min(page, total_pages))
+        start_idx = (page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+
+        # Wyświetl piosenki na bieżącej stronie
+        queue_page = self.queue[start_idx:end_idx]
+        queue_str += "**Kolejne piosenki**\n"
+        queue_str += "\n".join([f"{start_idx + idx + 1}. [{song[1]}]({song[2]}) - {song[4] // 60}:{song[4] % 60:02d}"
+                                  for idx, song in enumerate(queue_page)])
+
+        embed = discord.Embed(title=f"Kolejka piosenek - Strona {page}/{total_pages}", description=queue_str, color=0xA8E6CF)
+        if self.current_song:
+            embed.set_thumbnail(url=self.current_song['thumbnail'])
+        await ctx.send(embed=embed)
+
+    @commands.command(name='queue_page', help='Przejdź do określonej strony kolejki. Użyj: !queue_page [numer strony]')
+    async def queue_page(self, ctx, page: int = None):
+        if page is None:
+            await ctx.send("Proszę podać numer strony, do której chcesz przejść. 📄")
+        else:
+            await self.queue_list(ctx, page)
+
+    @commands.command(name='now_playing', aliases=['np'], help='Sprawdź, na jakiej minucie odtwarzania jesteś. Użyj: !now_playing lub !np')
+    async def now_playing(self, ctx):
+        if ctx.voice_client and ctx.voice_client.is_playing():
+            if not self.current_song:
+                await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
+                return
+
+            elapsed_time = time.time() - self.start_time if self.start_time else 0
+            elapsed_minutes = int(elapsed_time // 60)
+            elapsed_seconds = int(elapsed_time % 60)
+
+            total_duration = self.current_song['duration']
+            total_minutes = int(total_duration // 60)
+            total_seconds = int(total_duration % 60)
+
+            progress_bar_length = 20
+            progress = int((elapsed_time / total_duration) * progress_bar_length) if total_duration > 0 else 0
+            progress_bar = "▬" * progress + "🔘" + "▬" * (progress_bar_length - progress - 1)
+
+            embed = discord.Embed(title="Teraz odtwarzane", description=f"[{self.current_song['title']}]({self.current_song['webpage_url']})", color=0x00ff00)
+            embed.set_thumbnail(url=self.current_song['thumbnail'])
+            embed.add_field(name="Czas", value=f"{elapsed_minutes}:{elapsed_seconds:02d} / {total_minutes}:{total_seconds:02d}", inline=False)
+            embed.add_field(name="Postęp", value=progress_bar, inline=False)
+
             await ctx.send(embed=embed)
         else:
-            await ctx.send("Kolejka jest pusta. 🎶")
+            await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
+
+    async def play_song(self, ctx, url, start_time=0):
+        FFMPEG_OPTIONS = {
+            'before_options': f'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {start_time}',
+            'options': '-vn'
+        }
+        with youtube_dl.YoutubeDL({'format': 'bestaudio'}) as ydl:
+            info = ydl.extract_info(url, download=False)
+            url2 = info['url']
+            title = info.get('title', 'Nieznany tytuł')
+            webpage_url = info.get('webpage_url', url)
+            thumbnail = info.get('thumbnail', '')
+            duration = info.get('duration', 0)
+
+        source = discord.FFmpegPCMAudio(url2, **FFMPEG_OPTIONS)
+        if ctx.voice_client is None:
+            channel = ctx.author.voice.channel
+            self.voice_client = await channel.connect()
+        else:
+            self.voice_client = ctx.voice_client
+
+        self.voice_client.play(source, after=lambda e: logger.error(f'Błąd podczas odtwarzania: {e}') if e else None)
+        self.start_time = time.time() - start_time  # Ustawienie czasu rozpoczęcia odtwarzania
+
+        # Aktualizacja historii utworów
+        if self.current_song:
+            self.history.append(self.current_song)
+        self.current_song = {
+            'url': url,
+            'title': title,
+            'webpage_url': webpage_url,
+            'thumbnail': thumbnail,
+            'duration': duration
+        }
 
     @commands.command(name='forward', aliases=['fwd'], help='Przewiń aktualnie odtwarzaną piosenkę o określoną liczbę sekund. Użyj: !forward [sekundy]')
     async def forward(self, ctx, seconds: int):
@@ -350,62 +406,41 @@ class Music(commands.Cog):
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
 
-    @commands.command(name='now_playing', aliases=['np'], help='Sprawdź, na jakiej minucie odtwarzania jesteś. Użyj: !now_playing lub !np')
-    async def now_playing(self, ctx):
+    @commands.command(name='seek', help='Przewiń aktualnie odtwarzaną piosenkę do określonego czasu. Użyj: !seek [sekundy lub mm:ss]')
+    async def seek(self, ctx, *, time_str: str):
+        try:
+            seconds = parse_minutes_seconds(time_str) if ':' in time_str else parse_time(time_str)
+        except ValueError:
+            await ctx.send("Nieprawidłowy format czasu. Użyj formatu sekund (np. 90) lub mm:ss (np. 01:30). ⏱️")
+            return
+
         if ctx.voice_client and ctx.voice_client.is_playing():
             if not self.current_song:
                 await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
                 return
 
-            elapsed_time = time.time() - self.start_time if self.start_time else 0
-            elapsed_minutes = int(elapsed_time // 60)
-            elapsed_seconds = int(elapsed_time % 60)
+            url = self.current_song['url']
+            ctx.voice_client.stop()
+            await self.play_song(ctx, url, start_time=seconds)
 
-            total_duration = self.current_song['duration']
-            total_minutes = int(total_duration // 60)
-            total_seconds = int(total_duration % 60)
-
-            progress_bar_length = 20
-            progress = int((elapsed_time / total_duration) * progress_bar_length)
-            progress_bar = "-" * progress + "●" + "-" * (progress_bar_length - progress - 1)
-
-            embed = discord.Embed(title="Teraz odtwarzane", description=f"[{self.current_song['title']}]({self.current_song['webpage_url']})", color=0x00ff00)
-            embed.set_thumbnail(url=self.current_song['thumbnail'])
-            embed.add_field(name="Czas", value=f"{elapsed_minutes}:{elapsed_seconds:02d} / {total_minutes}:{total_seconds:02d}", inline=False)
-            embed.add_field(name="Postęp", value=progress_bar, inline=False)
-
-            await ctx.send(embed=embed)
+            logger.debug(f"Przewinięto utwór do pozycji {seconds} sekund.")
+            await ctx.send(f"Przewinięto utwór do pozycji {seconds} sekund. ⏩")
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
     
-    # Komenda join
-    @commands.command(name='join', help='Sprawia, że bot dołącza do kanału głosowego użytkownika. Użyj: !join')
-    async def join(self, ctx):
-        try:
-            channel = ctx.author.voice.channel
-            if ctx.voice_client is None:
-                await channel.connect()
-                await ctx.send(f"Dołączyłem do kanału {channel.name}. 🎶")
-            else:
-                await ctx.send("Jestem już połączony z kanałem głosowym. 🎶")
-        except AttributeError:
-            await ctx.send("Musisz być na kanale głosowym, aby użyć tej komendy. 🎶")
-    
-    # Komenda songinfo
-    @commands.command(name='songinfo', help='Wyświetla dodatkowe informacje o aktualnie odtwarzanej piosence. Użyj: !songinfo')
-    async def songinfo(self, ctx):
-        if ctx.voice_client and ctx.voice_client.is_playing() and self.current_song:
-            embed = discord.Embed(
-                title="Informacje o utworze",
-                description=f"[{self.current_song['title']}]({self.current_song['webpage_url']})",
-                color=0x00ff00
-            )
-            embed.set_thumbnail(url=self.current_song['thumbnail'])
-            embed.add_field(name="Czas trwania", value=f"{self.current_song['duration'] // 60}:{self.current_song['duration'] % 60:02d}", inline=True)
-            embed.add_field(name="URL", value=self.current_song['webpage_url'], inline=False)
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
+    @commands.command(name='remove', help='Usuń utwór z kolejki na podstawie jego numeru. Użyj: !remove [numer]')
+    async def remove(self, ctx, position: int):
+        if position < 1 or position > len(self.queue):
+            await ctx.send("Nieprawidłowy numer utworu. 🎶")
+            return
+
+        removed_song = self.queue.pop(position - 1)
+        await ctx.send(f"Usunięto utwór: {removed_song[1]} z kolejki. ❌")
+
+    @commands.command(name='clearqueue', aliases=['cq'], help='Wyczyść kolejkę. Użyj: !clearqueue')
+    async def clearqueue(self, ctx):
+        self.queue.clear()
+        await ctx.send("Kolejka została wyczyszczona. 🧹")
 
 # Funkcja setup, która pozwala zarejestrować cogs w bota
 async def setup(bot):

@@ -3,4 +3,5 @@ token.env
 /cogs/__pycache__
 /cache
 /__pycache__
+/logs
 *.log

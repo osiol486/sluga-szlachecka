@@ -5,15 +5,6 @@ import asyncio
 import psutil
 import logging
 
-
-# Konfiguracja loggera
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',  # Format logu z datą, godziną i poziomem logowania
-    datefmt='%Y-%m-%d %H:%M:%S'  # Format daty i godziny
-)
-
-
 # Kolor embedu
 EMBED_COLOR = 0x3498DB  # niebieski
 
@@ -22,23 +13,75 @@ class Information(commands.Cog):
         self.bot = bot
 
     # Komenda wyświetlania dostępnych komend
-    @commands.command(name='pomoc', aliases=['help'], help='Wyświetl listę dostępnych komend.')
-    async def pomoc(self, ctx):
-        embed = discord.Embed(title="Lista dostępnych komend", description="Poniżej znajduje się lista dostępnych komend i ich opis:", color=EMBED_COLOR)
+    @commands.command(name='commands', aliases=['komendy'], help='Wyświetl listę wszystkich komend. Użyj: !commands lub !komendy')
+    async def commands_list(self, ctx):
+        message = await ctx.send(
+            "Jakie komendy chcesz? Wybierz odpowiednią emotkę:\n"
+            "🔨 Moderacyjne\n"
+            "ℹ️ Informacyjne\n"
+            "🔧 Narzędzia (Utilities)\n"
+            "🎶 Muzyczne"
+        )
+        
+        # Dodanie reakcji do wiadomości
+        await message.add_reaction("🔨")
+        await message.add_reaction("ℹ️")
+        await message.add_reaction("🔧")
+        await message.add_reaction("🎶")
 
-        commands_list = [
-            {"name": "!play [nazwa utworu / URL]", "aliases": "p", "description": "Odtwórz muzykę z YouTube."},
-            {"name": "!skip", "aliases": "s", "description": "Przewiń do następnej piosenki w kolejce."},
-            {"name": "!loop", "aliases": None, "description": "Zapętlaj aktualnie odtwarzaną piosenkę."},
-            {"name": "!loopqueue", "aliases": "lq", "description": "Zapętlaj kolejkę."},
-            {"name": "!stop", "aliases": "pause", "description": "Wstrzymaj odtwarzanie muzyki."},
-            {"name": "!resume", "aliases": None, "description": "Wznów odtwarzanie muzyki."},
-            {"name": "!disconnect", "aliases": "dc", "description": "Rozłącz bota z kanału głosowego."},
-            {"name": "!queue", "aliases": "q", "description": "Wyświetl listę piosenek w kolejce."},
-            {"name": "!now_playing", "aliases": "np", "description": "Wyświetl aktualnie odtwarzaną piosenkę."},
-            {"name": "!info", "aliases": None, "description": "Wyświetl informacje o bocie."}
-        ]
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["🔨", "ℹ️", "🔧", "🎶"]
 
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send("Nie otrzymano odpowiedzi w odpowiednim czasie. Spróbuj ponownie później.")
+            return
+
+        if str(reaction.emoji) == "🔨":
+            commands_list = [
+                {"name": "!kick [użytkownik]", "aliases": None, "description": "Wyrzuć użytkownika z serwera."},
+                {"name": "!ban [użytkownik] [czas]", "aliases": None, "description": "Zbanuj użytkownika na określony czas."},
+                {"name": "!mute [użytkownik] [czas]", "aliases": None, "description": "Wycisz użytkownika na określony czas."},
+                {"name": "!unmute [użytkownik]", "aliases": None, "description": "Odblokuj użytkownika."},
+                {"name": "!purge [liczba]", "aliases": None, "description": "Usuń określoną liczbę wiadomości z możliwością użycia filtrów."}
+            ]
+            title = "Komendy Moderacyjne"
+        elif str(reaction.emoji) == "ℹ️":
+            commands_list = [
+                {"name": "!info", "aliases": None, "description": "Wyświetl informacje o bocie."},
+                {"name": "!ping", "aliases": None, "description": "Sprawdź opóźnienie bota."},
+                {"name": "!memory", "aliases": None, "description": "Pokaż zużycie pamięci przez bota."},
+                {"name": "!commands", "aliases": "komendy", "description": "Wyświetl listę wszystkich komend."}
+            ]
+            title = "Komendy Informacyjne"
+        elif str(reaction.emoji) == "🔧":
+            commands_list = [
+                {"name": "!translate [słowo]", "aliases": None, "description": "Tłumaczy podane słowo z polskiego na angielski lub odwrotnie."},
+                {"name": "!avatar [użytkownik]", "aliases": None, "description": "Wyświetla avatar użytkownika."},
+                {"name": "!serverinfo", "aliases": None, "description": "Wyświetla informacje o serwerze."},
+                {"name": "!userinfo [użytkownik]", "aliases": None, "description": "Wyświetla informacje o użytkowniku."}
+            ]
+            title = "Komendy Narzędziowe (Utilities)"
+        elif str(reaction.emoji) == "🎶":
+            commands_list = [
+                {"name": "!play [nazwa utworu / URL]", "aliases": "p", "description": "Odtwórz muzykę z YouTube."},
+                {"name": "!skip", "aliases": "s", "description": "Przewiń do następnej piosenki w kolejce."},
+                {"name": "!loop", "aliases": None, "description": "Zapętlaj aktualnie odtwarzaną piosenkę."},
+                {"name": "!loopqueue", "aliases": "lq", "description": "Zapętlaj kolejkę."},
+                {"name": "!stop", "aliases": "pause", "description": "Wstrzymaj odtwarzanie muzyki."},
+                {"name": "!resume", "aliases": None, "description": "Wznów odtwarzanie muzyki."},
+                {"name": "!disconnect", "aliases": "dc", "description": "Rozłącz bota z kanału głosowego."},
+                {"name": "!queue", "aliases": "q", "description": "Wyświetl listę piosenek w kolejce."},
+                {"name": "!now_playing", "aliases": "np", "description": "Wyświetl aktualnie odtwarzaną piosenkę."},
+                {"name": "!seek [sekundy lub mm:ss]", "aliases": None, "description": "Przewiń aktualnie odtwarzaną piosenkę do określonego czasu."},
+                {"name": "!remove [numer]", "aliases": None, "description": "Usuń utwór z kolejki na podstawie jego numeru."},
+                {"name": "!clearqueue", "aliases": "cq", "description": "Wyczyść kolejkę."}
+            ]
+            title = "Komendy Muzyczne"
+        
+        # Stworzenie embeda z odpowiednią kategorią komend
+        embed = discord.Embed(title=title, description="Poniżej znajduje się lista dostępnych komend i ich opis:", color=EMBED_COLOR)
         for command in commands_list:
             aliases = f" (alias: {command['aliases']})" if command['aliases'] else ""
             embed.add_field(name=command["name"] + aliases, value=command["description"], inline=False)
@@ -46,7 +89,7 @@ class Information(commands.Cog):
         await ctx.send(embed=embed)
 
     # Komenda wyświetlania informacji o bocie
-    @commands.command(name='info', help='Wyświetl informacje o bocie.')
+    @commands.command(name='info', help='Wyświetl informacje o bocie. Użyj: !info')
     async def info(self, ctx):
         # Pobierz URL do awatara bota oraz jego nazwę
         bot_avatar_url = self.bot.user.avatar.url
@@ -60,7 +103,8 @@ class Information(commands.Cog):
         )
         embed.add_field(name="Twórca", value="Bartłomiej Rogala / discord: osiol486", inline=False)
         embed.add_field(name="Repozytorium GitHub", value="[Kliknij tutaj](https://github.com/osiol486/discordbot)", inline=False)
-        
+        embed.add_field(name="Dodatkowe informacje", value="Użyj komendy !commands, aby zobaczyć pełną listę komend, lub !help, aby uzyskać dodatkową pomoc.", inline=False)
+
         # Ustawienie awatara bota jako miniatury w embede
         embed.set_thumbnail(url=bot_avatar_url)
 
@@ -85,6 +129,16 @@ class Information(commands.Cog):
 
         await ctx.send(f"Bot używa: {used_memory_mb:.2f} MB RAM z dostępnych: {total_memory_mb:.2f} MB RAM")
 
+    # Nowa wersja komendy help
+    @commands.command(name='help', help='Wyświetl pomoc dla wszystkich komend. Użyj: !help')
+    async def help_command(self, ctx):
+        embed = discord.Embed(
+            title="Pomoc",
+            description="Użyj komendy !commands, aby zobaczyć pełną listę komend, lub !info, aby uzyskać informacje o bocie.",
+            color=EMBED_COLOR
+        )
+        embed.add_field(name="Dodatkowe wsparcie", value="W razie problemów możesz skontaktować się z twórcą bota: Bartłomiej Rogala (discord: osiol486)", inline=False)
+        await ctx.send(embed=embed)
 
 # Funkcja setup, która pozwala zarejestrować cogs w bota
 async def setup(bot):

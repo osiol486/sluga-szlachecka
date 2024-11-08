@@ -1,5 +1,5 @@
 import os
-import sys  # Import sys, aby użyć sys.stderr
+import sys 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -11,8 +11,6 @@ from logger_config import configure_logger, guild_log_prefix
 
 # Konfiguracja loggera
 configure_logger()
-
-prefix = guild_log_prefix(ctx)
 
 # Załaduj zmienne środowiskowe
 load_dotenv(dotenv_path='token.env')
@@ -28,8 +26,6 @@ intents.members = True
 # Konfiguracja loggera Loguru
 init(autoreset=True)  # Inicjalizacja colorama z automatycznym resetowaniem kolorów
 
-logger.remove()  # Usuń domyślny handler
-
 # Utworzenie instancji bota
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -38,9 +34,9 @@ async def on_ready():
     logger.success(f'Bot {bot.user.name} został uruchomiony poprawnie!')
     await bot.load_extension('cogs.music')  # Załaduj cogs muzyczne z music.py
     await bot.load_extension('cogs.moderation')  # Załaduj cogs moderacyjne z moderation.py
-    await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
-    await bot.load_extension('cogs.utility')
-# Załaduj cogs utility z utility.py
+    await bot.load_extension('cogs.information')  # Załaduj cogs informacyjne z information.py
+    await bot.load_extension('cogs.utility')  # Załaduj cogs utility z utility.py
+    await bot.load_extension('cogs.antispam')
 
 # Przykład dodania logów do komend
 @bot.event

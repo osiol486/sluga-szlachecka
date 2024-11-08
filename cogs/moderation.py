@@ -7,13 +7,11 @@ from loguru import logger
 from colorama import Fore, Style
 from utils import parse_time, parse_minutes_seconds
 
-# Konfiguracja loggera loguru
-logger.add("bot.log", format="{time} {level} {message}", level="INFO", rotation="10 MB")
-
 # Funkcja logująca wiadomości na żółto z informacją o serwerze
 def yellow_log(ctx, message, level="INFO"):
     guild_info = f"[{ctx.guild.name} ({ctx.guild.id})]" if ctx.guild else "[Brak serwera]"
-    log_message = f"{Fore.YELLOW}{guild_info} {message}{Style.RESET_ALL}"
+    log_message = f"{guild_info} {message}"  # Nie dodawaj kolorów, które mogą być problematyczne w logach plikowych
+
     if level == "DEBUG":
         logger.debug(log_message)
     else:
