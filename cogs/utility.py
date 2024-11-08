@@ -3,10 +3,42 @@ from discord.ext import commands
 import requests
 from bs4 import BeautifulSoup
 import openai
+from dotenv import load_dotenv
+
+# Ładowanie zmiennych środowiskowych z pliku .env
+load_dotenv()
+
+# Ustawienie klucza API OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.command(name='chatgpt', help='Zapytaj ChatGPT. Użyj: !chatgpt [pytanie]')
+    async def chatgpt(self, ctx, *, question: str):
+        # Wyślij wiadomość informującą, że odpowiedź jest generowana
+        loading_message = await ctx.send("Rozmyślam nad odpowiedzią... 💭")
+
+        try:
+            # Zapytanie do OpenAI API
+            response = openai.Completion.create(
+                engine="text-davinci-004",  # Wybierz odpowiednią wersję silnika
+                prompt=question,
+                max_tokens=100,
+                temperature=0.7
+            )
+
+            # Pobranie odpowiedzi od ChatGPT
+            answer = response.choices[0].text.strip()
+
+            # Edytuj wiadomość i wyślij odpowiedź do użytkownika
+            await loading_message.edit(content=f"**Pytanie:** {question}\n**Odpowiedź:** {answer}")
+
+        except Exception as e:
+            # W razie błędu wyślij informację do użytkownika
+            await loading_message.edit(content="Wystąpił błąd podczas przetwarzania zapytania. Spróbuj ponownie później.")
+
 
     @commands.command(name='translate', help='Tłumaczy podane słowo z polskiego na angielski lub odwrotnie przy użyciu diki.pl. Użyj: !translate <słowo>')
     async def translate(self, ctx, *, word: str):
