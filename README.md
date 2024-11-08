@@ -4,15 +4,6 @@
 
 **2. Czemu instrukcja instalacji bota, a nie link do zaproszenia go?** Bota stworzyłem 4fun za pomocą chatu GPT, nie mam wiecznie włączonego komputera, aby bot działał, a discorda tak właściwie nie używam już praktycznie, więc tym bardziej bot jest przez większość czasu wyłączony.
 
-## Wymagania wstępne
-Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
-
-- polecam Visual Studio Code do edytowania kodu oraz do uruchamiania bota
-- Python 3.8 lub nowszy
-- FFMPEG (do obsługi dźwięku)
-- Libopus.dll (też do obsługi dźwięku)
-- Token bota Discord (wygenerowany na stronie Discord Developer Portal)
-
 ## Spis folderów i plików:
 
 **Folder główny:**
@@ -35,6 +26,19 @@ Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowis
 **Folder logs**
 
 Ten folder tworzy się po uruchomieniu bota. W 3 plikach zapisuje różne logi. 
+
+**Folder ffmpeg**
+
+Abyś nie musiał pobierać ręcznie ffmpeg, który służy do obsługi bota w zakresie muzyki, umieściłem ten folder również do pobrania na gotowo. Natomiast musisz w `music.py` zmienić lokalizację folderu ffmpeg na taką, gdzie jest ww. folder.
+
+## Wymagania wstępne
+Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
+
+- polecam Visual Studio Code do edytowania kodu oraz do uruchamiania bota
+- Python 3.8 lub nowszy
+- FFMPEG (do obsługi dźwięku)
+- Libopus.dll (też do obsługi dźwięku)
+- Token bota Discord (wygenerowany na stronie Discord Developer Portal)
 
 ## Krok 1: Zainstaluj Pythona
 
