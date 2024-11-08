@@ -7,10 +7,12 @@ from colorama import init, Fore, Style
 from loguru import logger
 import emoji
 from utils import parse_time, parse_minutes_seconds
-from logging_handlers.logger_config import configure_logger
+from logger_config import configure_logger, guild_log_prefix
 
 # Konfiguracja loggera
 configure_logger()
+
+prefix = guild_log_prefix(ctx)
 
 # Załaduj zmienne środowiskowe
 load_dotenv(dotenv_path='token.env')
@@ -31,12 +33,6 @@ logger.remove()  # Usuń domyślny handler
 # Utworzenie instancji bota
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-def guild_log_prefix(ctx):
-    """Tworzy prefiks logów zawierający nazwę i ID serwera."""
-    guild_name = ctx.guild.name if ctx.guild else "Brak serwera"
-    guild_id = ctx.guild.id if ctx.guild else "Brak ID"
-    return f"[{guild_name} ({guild_id})]"
-
 @bot.event
 async def on_ready():
     logger.success(f'Bot {bot.user.name} został uruchomiony poprawnie!')
@@ -45,29 +41,6 @@ async def on_ready():
     await bot.load_extension('cogs.information') # Załaduj cogs informacyjne z information.py
     await bot.load_extension('cogs.utility')
 # Załaduj cogs utility z utility.py
-
-@bot.event
-async def on_guild_join(guild):
-    # Sprawdź, czy ranga o nazwie "Sługa Szlachecka" już istnieje
-    role_exists = discord.utils.get(guild.roles, name="Sługa Szlachecka")
-    
-    # Jeśli ranga nie istnieje, utwórz ją
-    if role_exists is None:
-        permissions = discord.Permissions(administrator=True)  # Uprawnienia administratora
-        role = await guild.create_role(name="Sługa Szlachecka", permissions=permissions, reason="Bot musi mieć dostęp administracyjny")
-        logger.debug(f'Ranga "{role.name}" została utworzona na serwerze {guild.name} (ID: {guild.id}).')
-
-        # Przypisz rangę do bota
-        bot_member = guild.get_member(bot.user.id)
-        if bot_member:
-            await bot_member.add_roles(role)
-            logger.debug(f'Ranga "{role.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
-    else:
-        # Jeśli ranga istnieje, przypisz ją
-        bot_member = guild.get_member(bot.user.id)
-        if bot_member and role_exists:
-            await bot_member.add_roles(role_exists)
-            logger.debug(f'Ranga "{role_exists.name}" została przypisana do bota na serwerze {guild.name} (ID: {guild.id}).')
 
 # Przykład dodania logów do komend
 @bot.event
@@ -84,9 +57,6 @@ async def on_message(message):
     
     # Przekaż obsługę komend do pozostałej części kodu bota
     await bot.process_commands(message)
-
-# Kolory dla embedów
-EMBED_COLOR = 0xFFEF0A  # żółty
 
 bot.remove_command('help')
 
