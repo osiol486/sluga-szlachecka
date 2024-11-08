@@ -21,6 +21,7 @@ def pink_log(ctx, message):
 # Folder do przechowywania cache'u
 CACHE_FOLDER = "cache"
 CACHE_FILE_PATH = os.path.join(CACHE_FOLDER, "music_cache.json")
+MAX_CACHE_SIZE_MB = 25
 
 # Sprawdź, czy folder cache istnieje, jeśli nie - utwórz go
 if not os.path.exists(CACHE_FOLDER):
@@ -30,9 +31,14 @@ if not os.path.exists(CACHE_FOLDER):
 try:
     # Odczytaj cache z pliku, jeśli istnieje
     if os.path.exists(CACHE_FILE_PATH):
-        with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
-            song_cache = json.load(f)
-        logger.debug('Załadowano cache utworów.')
+        if os.path.getsize(CACHE_FILE_PATH) > MAX_CACHE_SIZE_MB * 1024 * 1024:
+            os.remove(CACHE_FILE_PATH)
+            logger.debug(f'Plik cache osiągnął maksymalny rozmiar {MAX_CACHE_SIZE_MB} MB i został usunięty.')
+            song_cache = {}
+        else:
+            with open(CACHE_FILE_PATH, 'r', encoding='utf-8') as f:
+                song_cache = json.load(f)
+            logger.debug('Załadowano cache utworów.')
     else:
         song_cache = {}
         logger.debug('Cache utworów jest pusty.')
@@ -48,7 +54,6 @@ def save_cache():
         logger.debug('Cache został zapisany poprawnie.')
     except Exception as e:
         logger.error(f'Błąd podczas zapisywania cache: {e}')
-
 # Opcje FFMPEG
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',

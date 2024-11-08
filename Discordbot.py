@@ -48,8 +48,7 @@ async def on_message(message):
     if message.content.startswith(bot.command_prefix) and not message.content[len(bot.command_prefix):].split(" ")[0] in bot.all_commands:
         guild_prefix = guild_log_prefix(message)
         logger.debug(f"{guild_prefix} Nie rozpoznano komendy: {message.content}")
-        await message.add_reaction("❓")  # Dodaj emoji pytania, gdy komenda nie istnieje
-        await message.channel.send("Nie rozpoznano komendy. Użyj !help, aby zobaczyć dostępne komendy.")
+        await message.channel.send("Nie rozpoznano komendy. Użyj !komendy, aby zobaczyć dostępne komendy.")
     
     # Przekaż obsługę komend do pozostałej części kodu bota
     await bot.process_commands(message)
