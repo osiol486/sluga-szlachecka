@@ -30,9 +30,9 @@ Ten folder tworzy się po uruchomieniu bota. W 3 plikach zapisuje różne logi.
 
 Po uruchomieniu bota i skorzystaniu z komendy muzycznej `!play` bot zacznie zapisywać grane utwory w pliku, który utworzy w folderze cache. Jest to tak zrobione, aby zoptymalizować proces włączania muzyki i aby bot się nie zawieszał aż tak (normalnie bot by musiał szukać za każdym razem danego utworu na youtube, a tak to szuka w pliku `music_cache.json` jeżeli został już dany utwór użyty wcześniej).
 
-**Folder ffmpeg**
+**Folder ffmpeg** 
 
-Abyś nie musiał pobierać ręcznie ffmpeg, który służy do obsługi bota w zakresie muzyki, umieściłem ten folder również do pobrania na gotowo. Natomiast musisz w `music.py` zmienić lokalizację folderu ffmpeg na taką, gdzie jest ww. folder.
+Abyś nie musiał pobierać ręcznie ffmpeg, który służy do obsługi bota w zakresie muzyki, umieściłem ten folder również do pobrania na gotowo. Natomiast musisz w `music.py` zmienić lokalizację folderu ffmpeg na taką, gdzie jest ww. folder. Dzięki ffmpeg bot z muzyką waży do niecałych 300MB. Bez tego folderu by wszystko ważyło parę-parenaście MB.
 
 ## Wymagania wstępne
 Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
