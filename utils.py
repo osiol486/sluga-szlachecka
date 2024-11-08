@@ -21,3 +21,8 @@ def parse_minutes_seconds(time_str):
         minutes, seconds = match.groups()
         return int(minutes) * 60 + int(seconds)
     return None
+
+
+
+def format_datetime(dt):
+    return dt.strftime("%d %B %Y, %H:%M")

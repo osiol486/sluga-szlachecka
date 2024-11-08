@@ -57,7 +57,6 @@ class Information(commands.Cog):
             title = "Komendy Informacyjne"
         elif str(reaction.emoji) == "🔧":
             commands_list = [
-                {"name": "!translate [słowo]", "aliases": None, "description": "Tłumaczy podane słowo z polskiego na angielski lub odwrotnie."},
                 {"name": "!avatar [użytkownik]", "aliases": None, "description": "Wyświetla avatar użytkownika."},
                 {"name": "!serverinfo", "aliases": None, "description": "Wyświetla informacje o serwerze."},
                 {"name": "!userinfo [użytkownik]", "aliases": None, "description": "Wyświetla informacje o użytkowniku."}
