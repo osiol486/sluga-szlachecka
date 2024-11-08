@@ -378,6 +378,35 @@ class Music(commands.Cog):
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
     
+    # Komenda join
+    @commands.command(name='join', help='Sprawia, że bot dołącza do kanału głosowego użytkownika. Użyj: !join')
+    async def join(self, ctx):
+        try:
+            channel = ctx.author.voice.channel
+            if ctx.voice_client is None:
+                await channel.connect()
+                await ctx.send(f"Dołączyłem do kanału {channel.name}. 🎶")
+            else:
+                await ctx.send("Jestem już połączony z kanałem głosowym. 🎶")
+        except AttributeError:
+            await ctx.send("Musisz być na kanale głosowym, aby użyć tej komendy. 🎶")
+    
+    # Komenda songinfo
+    @commands.command(name='songinfo', help='Wyświetla dodatkowe informacje o aktualnie odtwarzanej piosence. Użyj: !songinfo')
+    async def songinfo(self, ctx):
+        if ctx.voice_client and ctx.voice_client.is_playing() and self.current_song:
+            embed = discord.Embed(
+                title="Informacje o utworze",
+                description=f"[{self.current_song['title']}]({self.current_song['webpage_url']})",
+                color=0x00ff00
+            )
+            embed.set_thumbnail(url=self.current_song['thumbnail'])
+            embed.add_field(name="Czas trwania", value=f"{self.current_song['duration'] // 60}:{self.current_song['duration'] % 60:02d}", inline=True)
+            embed.add_field(name="URL", value=self.current_song['webpage_url'], inline=False)
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
+
 # Funkcja setup, która pozwala zarejestrować cogs w bota
 async def setup(bot):
     await bot.add_cog(Music(bot))
