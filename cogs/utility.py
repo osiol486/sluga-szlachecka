@@ -8,20 +8,53 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-    @commands.command(name='translate', help='Tłumaczy podane słowo z polskiego na angielski lub odwrotnie przy użyciu diki.pl. Użyj: !translate <słowo>')
+    @commands.command(name='translate', help='Tłumaczy podane słowo z polskiego na angielski lub odwrotnie przy użyciu diki.pl oraz Merriam-Webster. Użyj: !translate <słowo>')
     async def translate(self, ctx, *, word: str):
         try:
-            url = f'https://www.diki.pl/slownik-angielskiego?q={word}'
-            response = requests.get(url)
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Diki.pl - Tłumaczenie słowa oraz przykładowe zdania
+            diki_url = f'https://www.diki.pl/slownik-angielskiego?q={word}'
+            diki_response = requests.get(diki_url)
+            diki_soup = BeautifulSoup(diki_response.text, 'html.parser')
 
-            # Pobieranie pierwszego wyniku tłumaczenia
-            translation = soup.find('span', class_='hw').text
+            # Pobieranie tłumaczenia
+            translation = diki_soup.find('span', class_='hw')
+            translation_text = translation.text if translation else 'Brak tłumaczenia'
 
-            if translation:
-                await ctx.send(f'Tłumaczenie dla "{word}": {translation}')
-            else:
-                await ctx.send(f'Nie znaleziono tłumaczenia dla "{word}" na diki.pl')
+            # Pobieranie przykładowych zdań
+            example_sentences = diki_soup.find_all('span', class_='exampleSentence')
+            examples = []
+            for sentence in example_sentences[:2]:
+                examples.append(sentence.text.strip())
+
+            diki_translation_info = f'Tłumaczenie dla "{word}": {translation_text}\n'
+            if examples:
+                diki_translation_info += "\nPrzykłady zdań z diki.pl:\n"
+                for example in examples:
+                    diki_translation_info += f'- {example}\n'
+
+            # Merriam-Webster - Definicja słowa oraz przykładowe zdania
+            mw_url = f'https://www.merriam-webster.com/dictionary/{word}'
+            mw_response = requests.get(mw_url)
+            mw_soup = BeautifulSoup(mw_response.text, 'html.parser')
+
+            # Pobieranie definicji
+            definition = mw_soup.find('span', class_='dtText')
+            definition_text = definition.text.strip() if definition else 'Brak definicji'
+
+            # Pobieranie przykładowych zdań
+            mw_examples = mw_soup.find_all('span', class_='ex-sent')
+            mw_example_sentences = []
+            for example in mw_examples[:2]:
+                mw_example_sentences.append(example.text.strip())
+
+            mw_translation_info = f'Definicja z Merriam-Webster dla "{word}": {definition_text}\n'
+            if mw_example_sentences:
+                mw_translation_info += "\nPrzykłady zdań z Merriam-Webster:\n"
+                for example in mw_example_sentences:
+                    mw_translation_info += f'- {example}\n'
+
+            # Wysyłanie wiadomości z tłumaczeniem, definicją i przykładami
+            await ctx.send(f'{diki_translation_info}\n{mw_translation_info}')
         except Exception as e:
             await ctx.send(f'Wystąpił błąd podczas tłumaczenia: {str(e)}')
 
