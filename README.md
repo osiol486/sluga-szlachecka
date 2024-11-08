@@ -1,4 +1,4 @@
-# Instrukcja instalacji bota
+# Instrukcja instalacji bota SŁUGA SZLACHECKA
 
 **1. Informuję, że instrukcja dotyczy instalacji na systemie Windows.**
 
