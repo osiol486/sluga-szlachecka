@@ -9,12 +9,11 @@
 **Folder główny:**
 
 1. `Discordbot.py` - główny plik uruchamiający bota.
-2. `bot_roles.py` - bot sprawdza czy ma swoją rangę.
-3. `libopus-0.dll` - plik potrzebny do odtwarzania muzyki.
-4. `logger_config.py` - tworzy logi do poszczególnych akcji z konsoli; przechowuje logi w utworzonym folderze "logs" w poszczególnych plikach .log
-5. `requirements.txt` - plik z wszystkimi bibilotekami, które są używane w bocie, również te importowane ręcznie. Patrz punkt 5 na samym końcu.
-6. `utils.py` - przydatne funkcje parsujące różne dane, np. nie trzeba pisać "60" (sekund) tylko można napisać w komendzie "1m" (minuta).
-7. `token.env` - patrz pkt 6.
+2. `libopus-0.dll` - plik potrzebny do odtwarzania muzyki.
+3. `logger_config.py` - tworzy logi do poszczególnych akcji z konsoli; przechowuje logi w utworzonym folderze "logs" w poszczególnych plikach .log
+4. `requirements.txt` - plik z wszystkimi bibilotekami, które są używane w bocie, również te importowane ręcznie. Patrz punkt 5 na samym końcu.
+5. `utils.py` - przydatne funkcje parsujące różne dane, np. nie trzeba pisać "60" (sekund) tylko można napisać w komendzie "1m" (minuta).
+6. `token.env` - patrz pkt 6.
 
 **Folder cogs:**
 
