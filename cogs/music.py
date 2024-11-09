@@ -54,6 +54,10 @@ def save_cache():
         logger.debug('Cache został zapisany poprawnie.')
     except Exception as e:
         logger.error(f'Błąd podczas zapisywania cache: {e}')
+        
+# Ustawienie ścieżki do ffmpeg.exe
+FFMPEG_PATH = os.path.join(os.path.dirname(__file__), "..", "ffmpeg", "bin", "ffmpeg.exe")
+
 # Opcje FFMPEG
 FFMPEG_OPTIONS = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -86,7 +90,7 @@ class Music(commands.Cog):
 
     # Funkcja do odtwarzania muzyki w tle
     def play_music(self, voice_client, source, after_callback):
-        voice_client.play(discord.FFmpegPCMAudio(executable="C:/Users/broga/Desktop/Programming/gpt dsc bot/ffmpeg/bin/ffmpeg.exe", source=source, **FFMPEG_OPTIONS), after=after_callback)
+        voice_client.play(discord.FFmpegPCMAudio(executable="FFMPEG_PATH", source=source, **FFMPEG_OPTIONS), after=after_callback)
 
     async def play_song(self, ctx, url, start_time=0):
         FFMPEG_OPTIONS = {
