@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 from colorama import init, Fore, Style
 from loguru import logger
 import emoji
-from utils import parse_time, parse_minutes_seconds
+from utils.utils import parse_time, parse_minutes_seconds
 from logger_config import configure_logger, guild_log_prefix
+from utils.constants import COMMANDS_PREFIX
 
 # Konfiguracja loggera
 configure_logger()
@@ -27,7 +28,7 @@ intents.members = True
 init(autoreset=True)  # Inicjalizacja colorama z automatycznym resetowaniem kolorów
 
 # Utworzenie instancji bota
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(COMMANDS_PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
