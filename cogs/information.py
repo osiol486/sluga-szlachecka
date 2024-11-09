@@ -4,9 +4,7 @@ import re
 import asyncio
 import psutil
 import logging
-
-# Kolor embedu
-EMBED_COLOR = 0x3498DB  # niebieski
+from utils.constants import EMBED_COLOR_BLUE
 
 class Information(commands.Cog):
     def __init__(self, bot):
@@ -80,7 +78,7 @@ class Information(commands.Cog):
             title = "Komendy Muzyczne"
         
         # Stworzenie embeda z odpowiednią kategorią komend
-        embed = discord.Embed(title=title, description="Poniżej znajduje się lista dostępnych komend i ich opis:", color=EMBED_COLOR)
+        embed = discord.Embed(title=title, description="Poniżej znajduje się lista dostępnych komend i ich opis:", color=EMBED_COLOR_BLUE)
         for command in commands_list:
             aliases = f" (alias: {command['aliases']})" if command['aliases'] else ""
             embed.add_field(name=command["name"] + aliases, value=command["description"], inline=False)
@@ -134,7 +132,7 @@ class Information(commands.Cog):
         embed = discord.Embed(
             title="Pomoc",
             description="Użyj komendy !commands, aby zobaczyć pełną listę komend, lub !info, aby uzyskać informacje o bocie.",
-            color=EMBED_COLOR
+            color=EMBED_COLOR_BLUE
         )
         embed.add_field(name="Dodatkowe wsparcie", value="W razie problemów możesz skontaktować się z twórcą bota: Bartłomiej Rogala (discord: osiol486)", inline=False)
         await ctx.send(embed=embed)
