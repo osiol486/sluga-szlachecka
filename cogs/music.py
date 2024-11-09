@@ -11,6 +11,7 @@ from colorama import Fore, Style
 from loguru import logger
 from utils import parse_time, parse_minutes_seconds
 import time
+from utils.constants import EMBED_COLOR_GREEN
 
 
 # Funkcja logująca wiadomości na poziomie DEBUG z kolorem magenta
@@ -73,9 +74,6 @@ voice_client = None
 start_time = None
 
 disconnect_task = None
-
-# Kolory dla embedów
-EMBED_COLOR = 0xA8E6CF  # pastelowy zielony
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -187,13 +185,13 @@ class Music(commands.Cog):
         self.start_time = time.time()
 
         # Przygotowanie embedu z informacjami o utworze
-        embed = discord.Embed(title="Odtwarzanie muzyki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
+        embed = discord.Embed(title="Odtwarzanie muzyki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR_GREEN)
         embed.set_thumbnail(url=thumbnail)
         embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
 
         if self.voice_client.is_playing() or self.voice_client.is_paused():
             self.queue.append((url, title, webpage_url, thumbnail, duration))
-            embed = discord.Embed(title="Dodano do kolejki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR)
+            embed = discord.Embed(title="Dodano do kolejki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR_GREEN)
             embed.set_thumbnail(url=thumbnail)
             embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
             await ctx.send(embed=embed)
