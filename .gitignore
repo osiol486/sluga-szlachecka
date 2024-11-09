@@ -1,3 +1,4 @@
+.gitignore
 token.env
 /cogs/__pycache__
 /cache
