@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
 
-EMBED_COLOR_XXXX = 
-EMBED_COLOR_XXX = 
-EMBED_COLOR_XXX = 
+EMBED_COLOR_YELLOW = 0xFFEF0A  # żółtawy
+EMBED_COLOR_RED = 0xFF0000  # czerwony
+EMBED_COLOR_BLUE = 0x3498DB  # niebieski
+EMBED_COLOR_GREEN = 0xA8E6CF  # pastelowy zielony
 
 COMMAND_PREFIX = "!"
 
