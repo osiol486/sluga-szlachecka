@@ -5,7 +5,8 @@ import re
 import asyncio
 from loguru import logger
 from colorama import Fore, Style
-from utils import parse_time, parse_minutes_seconds
+from utils.utils import parse_time, parse_minutes_seconds
+from utils.constants import ERROR_NO_PERMISSION_USER, ERROR_NO_PERMISSION_BOT, EMBED_COLOR_RED, EMBED_COLOR_YELLOW
 
 # Funkcja logująca wiadomości na żółto z informacją o serwerze
 def yellow_log(ctx, message, level="INFO"):
@@ -16,10 +17,6 @@ def yellow_log(ctx, message, level="INFO"):
         logger.debug(log_message)
     else:
         logger.info(log_message)
-
-# Kolory dla embedów
-EMBED_COLOR_YELLOW = 0xFFEF0A  # żółtawy
-EMBED_COLOR_RED = 0xFF0000  # czerwony
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -40,20 +37,41 @@ class Moderation(commands.Cog):
     @commands.command(name='ban', help='Zbanuj użytkownika na określony czas. Użyj: !ban [użytkownik] [czas (np. 1h, 1d)]')
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, time: str = None, *, reason=None):
-        await member.ban(reason=reason)
-        yellow_log(ctx, f'Użytkownik {member} został zbanowany przez {ctx.author}. Powód: {reason}')
-        embed = discord.Embed(title="Użytkownik zbanowany", description=f"{member.mention} został zbanowany przez {ctx.author.mention}.", color=EMBED_COLOR_RED)
-        if reason:
-            embed.add_field(name="Powód", value=reason, inline=False)
-        await ctx.send(embed=embed)
-        if time:
-            seconds = parse_time(time)
-            if seconds:
-                await asyncio.sleep(seconds)
-                await ctx.guild.unban(member)
-                yellow_log(ctx, f'Użytkownik {member} został odbanowany po {time}.')
-                embed = discord.Embed(title="Użytkownik odbanowany", description=f"{member.mention} został odbanowany po {time}.", color=EMBED_COLOR_YELLOW)
-                await ctx.send(embed=embed)
+        # Sprawdź, czy użytkownik wykonujący komendę ma uprawnienia do banowania
+        if not ctx.author.guild_permissions.ban_members:
+            await ctx.send(ERROR_NO_PERMISSION_USER)
+            return
+
+        # Sprawdź, czy podano użytkownika do zbanowania
+        if not member:
+            await ctx.send(f"{ctx.author.mention}, musisz podać użytkownika, którego chcesz zbanować.")
+            return
+
+        # Sprawdź, czy użytkownik próbujący zbanować siebie samego
+        if member == ctx.author:
+            await ctx.send(f"{ctx.author.mention}, nie możesz zbanować samego siebie.")
+            return
+
+        # Sprawdź, czy użytkownik próbujący zbanować bota
+        if member == ctx.guild.me:
+            await ctx.send(f"{ctx.author.mention}, nie możesz zbanować bota.")
+            return
+         # Spróbuj zbanować użytkownika
+        try:
+            await member.ban(reason=reason)
+            yellow_log(ctx, f'Użytkownik {member} został zbanowany przez {ctx.author}. Powód: {reason}')
+            embed = discord.Embed(title="Użytkownik zbanowany", description=f"{member.mention} został zbanowany przez {ctx.author.mention}.", color=EMBED_COLOR_RED)
+            if reason:
+                embed.add_field(name="Powód", value=reason, inline=False)
+            await ctx.send(embed=embed)
+            if time:
+                seconds = parse_time(time)
+                if seconds:
+                    await asyncio.sleep(seconds)
+                    await ctx.guild.unban(member)
+                    yellow_log(ctx, f'Użytkownik {member} został odbanowany po {time}.')
+                    embed = discord.Embed(title="Użytkownik odbanowany", description=f"{member.mention} został odbanowany po {time}.", color=EMBED_COLOR_YELLOW)
+                    await ctx.send(embed=embed)
 
     # Komenda do mutowania
     @commands.command(name='mute', help='Wycisz użytkownika na określony czas. Użyj: !mute [użytkownik] [czas (np. 1h, 1d)]')
