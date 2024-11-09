@@ -1,9 +1,7 @@
 import discord
 from discord.ext import commands
-import re
 import asyncio
 import psutil
-import logging
 from utils.constants import EMBED_COLOR_BLUE
 
 class Information(commands.Cog):
@@ -28,13 +26,16 @@ class Information(commands.Cog):
         await message.add_reaction("🎶")
 
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["🔨", "ℹ️", "🔧", "🎶"]
+            return user == ctx.author and str(reaction.emoji) in ["🔨", "ℹ️", "🔧", "🎶"] and reaction.message.id == message.id
 
         try:
             reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
         except asyncio.TimeoutError:
             await ctx.send("Nie otrzymano odpowiedzi w odpowiednim czasie. Spróbuj ponownie później.")
             return
+
+        # Usunięcie wszystkich reakcji
+        await message.clear_reactions()
 
         if str(reaction.emoji) == "🔨":
             commands_list = [
@@ -83,7 +84,9 @@ class Information(commands.Cog):
             aliases = f" (alias: {command['aliases']})" if command['aliases'] else ""
             embed.add_field(name=command["name"] + aliases, value=command["description"], inline=False)
 
-        await ctx.send(embed=embed)
+        # Edycja istniejącej wiadomości z nowym embedem
+        await message.edit(content=None, embed=embed)
+
 
     # Komenda wyświetlania informacji o bocie
     @commands.command(name='info', help='Wyświetl informacje o bocie. Użyj: !info')

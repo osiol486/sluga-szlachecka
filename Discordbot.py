@@ -1,12 +1,9 @@
 import os
-import sys 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from colorama import init, Fore, Style
 from loguru import logger
-import emoji
-from utils.utils import parse_time, parse_minutes_seconds
 from logger_config import configure_logger, guild_log_prefix
 from utils.constants import COMMAND_PREFIX
 

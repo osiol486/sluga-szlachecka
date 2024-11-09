@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
-import requests
-from bs4 import BeautifulSoup
-from utils import format_datetime
+from utils.utils import format_datetime
 
 class Utility(commands.Cog):
     def __init__(self, bot):

@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, MissingPermissions
-import re
 import asyncio
 from loguru import logger
 from colorama import Fore, Style
@@ -22,17 +21,6 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # Komenda do wyrzucenia użytkownika
-    @commands.command(name='kick', help='Wyrzuć użytkownika z serwera. Użyj: !kick [użytkownik]')
-    @commands.has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *, reason=None):
-        await member.kick(reason=reason)
-        yellow_log(ctx, f'Użytkownik {member} został wyrzucony z serwera przez {ctx.author}. Powód: {reason}')
-        embed = discord.Embed(title="Użytkownik wyrzucony", description=f"{member.mention} został wyrzucony z serwera przez {ctx.author.mention}.", color=EMBED_COLOR_YELLOW)
-        if reason:
-            embed.add_field(name="Powód", value=reason, inline=False)
-        await ctx.send(embed=embed)
-
     # Komenda do zbanowania użytkownika
     @commands.command(name='ban', help='Zbanuj użytkownika na określony czas. Użyj: !ban [użytkownik] [czas (np. 1h, 1d)]')
     @commands.has_permissions(ban_members=True)
@@ -41,37 +29,61 @@ class Moderation(commands.Cog):
         if not ctx.author.guild_permissions.ban_members:
             await ctx.send(ERROR_NO_PERMISSION_USER)
             return
-
         # Sprawdź, czy podano użytkownika do zbanowania
         if not member:
             await ctx.send(f"{ctx.author.mention}, musisz podać użytkownika, którego chcesz zbanować.")
             return
-
         # Sprawdź, czy użytkownik próbujący zbanować siebie samego
         if member == ctx.author:
             await ctx.send(f"{ctx.author.mention}, nie możesz zbanować samego siebie.")
             return
-
         # Sprawdź, czy użytkownik próbujący zbanować bota
         if member == ctx.guild.me:
             await ctx.send(f"{ctx.author.mention}, nie możesz zbanować bota.")
             return
-         # Spróbuj zbanować użytkownika
+        # Spróbuj zbanować użytkownika
         try:
             await member.ban(reason=reason)
-            yellow_log(ctx, f'Użytkownik {member} został zbanowany przez {ctx.author}. Powód: {reason}')
-            embed = discord.Embed(title="Użytkownik zbanowany", description=f"{member.mention} został zbanowany przez {ctx.author.mention}.", color=EMBED_COLOR_RED)
+            yellow_log(ctx, f'[{ctx.guild.name} ({ctx.guild.id})] Użytkownik {member} został zbanowany przez {ctx.author}. Powód: {reason}')
+            
+            embed = discord.Embed(
+                title="Użytkownik zbanowany",
+                description=f"{member.mention} został zbanowany przez {ctx.author.mention}.",
+                color=EMBED_COLOR_RED
+            )
             if reason:
                 embed.add_field(name="Powód", value=reason, inline=False)
             await ctx.send(embed=embed)
+            # Obsługa czasowego bana
             if time:
                 seconds = parse_time(time)
                 if seconds:
                     await asyncio.sleep(seconds)
                     await ctx.guild.unban(member)
                     yellow_log(ctx, f'Użytkownik {member} został odbanowany po {time}.')
-                    embed = discord.Embed(title="Użytkownik odbanowany", description=f"{member.mention} został odbanowany po {time}.", color=EMBED_COLOR_YELLOW)
+                    
+                    embed = discord.Embed(
+                        title="Użytkownik odbanowany",
+                        description=f"{member.mention} został odbanowany po {time}.",
+                        color=EMBED_COLOR_YELLOW
+                    )
                     await ctx.send(embed=embed)
+
+        except discord.Forbidden:
+            await ctx.send(ERROR_NO_PERMISSION_BOT)
+        except discord.HTTPException as e:
+            await ctx.send(f"Wystąpił błąd podczas próby banowania: {str(e)}")
+
+    # Komenda do wyrzucenia użytkownika
+    @commands.command(name='kick', help='Wyrzuć użytkownika z serwera. Użyj: !kick [użytkownik]')
+    @commands.has_permissions(kick_members=True)
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
+        await member.kick(reason=reason)
+        yellow_log(ctx, f'[{ctx.guild.name} ({ctx.guild.id})] Użytkownik {member} został wyrzucony z serwera przez {ctx.author}. Powód: {reason}')
+        embed = discord.Embed(title="Użytkownik wyrzucony", description=f"{member.mention} został wyrzucony z serwera przez {ctx.author.mention}.", color=EMBED_COLOR_YELLOW)
+        if reason:
+            embed.add_field(name="Powód", value=reason, inline=False)
+        await ctx.send(embed=embed)
 
     # Komenda do mutowania
     @commands.command(name='mute', help='Wycisz użytkownika na określony czas. Użyj: !mute [użytkownik] [czas (np. 1h, 1d)]')
@@ -127,8 +139,6 @@ class Moderation(commands.Cog):
         
         await ctx.send(embed=embed)
 
-
-
     # Komenda do odciszenia użytkownika
     @commands.command(name='unmute', help='Odblokuj użytkownika. Użyj: !unmute [użytkownik]')
     @commands.has_permissions(manage_roles=True)
@@ -175,12 +185,11 @@ class Moderation(commands.Cog):
         # Logowanie informacji o użyciu komendy purge
         yellow_log(ctx, f'Komenda "purge" została użyta przez {ctx.author} w kanale #{ctx.channel}. Usunięto {len(deleted)} wiadomości.')
 
-    @purge.error
-    async def purge_error(self, ctx, error):
-        if isinstance(error, MissingPermissions):
-            await ctx.send("Nie masz uprawnień do usuwania wiadomości. 🛑")
-            # Logowanie błędu uprawnień
-            yellow_log(ctx, f'Nieudana próba użycia komendy "purge" przez {ctx.author} w kanale #{ctx.channel}. Brak uprawnień.', level="DEBUG")
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send(ERROR_NO_PERMISSION_USER)
+
 
 # Funkcja setup, która pozwala zarejestrować cogs w bota
 async def setup(bot):
