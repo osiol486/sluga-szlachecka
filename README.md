@@ -11,9 +11,8 @@
 1. `Discordbot.py` - główny plik uruchamiający bota.
 2. `libopus-0.dll` - plik potrzebny do odtwarzania muzyki.
 3. `logger_config.py` - tworzy logi do poszczególnych akcji z konsoli; przechowuje logi w utworzonym folderze "logs" w poszczególnych plikach .log
-4. `requirements.txt` - plik z wszystkimi bibilotekami, które są używane w bocie, również te importowane ręcznie. Patrz punkt 5 na samym końcu.
-5. `utils.py` - przydatne funkcje parsujące różne dane, np. nie trzeba pisać "60" (sekund) tylko można napisać w komendzie "1m" (minuta).
-6. `token.env` - patrz pkt 6.
+4. `requirements.txt` - plik z wszystkimi bibilotekami, które są używane w bocie, również te importowane ręcznie. Patrz punkt 4 na samym końcu.
+5. `token.env` - patrz pkt 7
 
 **Folder cogs:**
 
@@ -21,6 +20,7 @@
 2. `information.py` - znajdują się tam komendy informacyjne, np. help, komendy, ping.
 3. `moderation.py` - znajdują się tam podstawowe komendy moderacyjne, np. mute, ban, kick, purge.
 4. `music.py` - znajdują się tam komendy muzyczne, np. play, queue, loopqueue, seek, nowplaying.
+5. `utility.py` -znajdują się tam komendy narzędziowe, np. userinfo, serverinfo, avatar.
 
 **Folder logs**
 
@@ -32,12 +32,17 @@ Po uruchomieniu bota i skorzystaniu z komendy muzycznej `!play` bot zacznie zapi
 
 **Folder ffmpeg** 
 
-Abyś nie musiał pobierać ręcznie ffmpeg, który służy do obsługi bota w zakresie muzyki, umieściłem ten folder również do pobrania na gotowo. Natomiast musisz w `music.py` zmienić lokalizację folderu ffmpeg na taką, gdzie jest ww. folder. Dzięki ffmpeg bot z muzyką waży do niecałych 300MB. Bez tego folderu by wszystko ważyło parę-parenaście MB.
+Abyś nie musiał pobierać ręcznie ffmpeg, który służy do obsługi bota w zakresie muzyki, umieściłem ten folder również do pobrania na gotowo. Dzięki ffmpeg bot z muzyką waży do niecałych 300MB. Bez tego folderu by wszystko ważyło parę-parenaście MB.
+
+**Folder utils**
+
+1. `utils.py` - przydatne funkcje parsujące różne dane, np. nie trzeba pisać "60" (sekund) tylko można napisać w komendzie "1m" (minuta).
+2. `constants.py` - przechowuje stałe zmienne, czyli np. chcemy używać danego koloru zawsze, to ma być ten konkretny zielony. No to ustawiamy tam jaki to jest zielony, a następnie używamy zielonego w różnych plikach bez koniecznosci wklejania z osobna kodu HEX.
 
 ## Wymagania wstępne
 Aby uruchomić bota muzycznego Discord, potrzebujesz kilku narzędzi i środowisk:
 
-- polecam Visual Studio Code do edytowania kodu oraz do uruchamiania bota
+- polecam Visual Studio Code do edytowania kodu oraz do uruchamiania bota, ale nie jest to konieczne.
 - Python 3.8 lub nowszy
 - FFMPEG (do obsługi dźwięku)
 - Libopus.dll (też do obsługi dźwięku)
@@ -95,7 +100,17 @@ Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu (
 
 Jeżeli po uruchomieniu bota wyskakuje ci w konsoli, że nie znajduje biblioteki o nazwie [nazwa biblioteki], to znajdź nazwę tej biblioteki w pliku `requirements.txt`, a następnie wpisz komendę w `CMD` `pip install [nazwa biblioteki]`.
 
-## Krok 5: Konfiguracja tokena bota
+## Krok 5 Konfiguracja FFmpeg
+
+Dodaj FFmpeg do zmiennych środowiskowych:
+	•	Kliknij prawym przyciskiem myszy ikonę Ten komputer (lub Mój komputer) na pulpicie i wybierz Właściwości.
+	•	Kliknij Zaawansowane ustawienia systemu (z lewej strony).
+	•	W oknie Właściwości systemu wybierz zakładkę Zaawansowane i kliknij przycisk Zmienne środowiskowe.
+	•	W sekcji Zmienne systemowe znajdź zmienną o nazwie Path i kliknij przycisk Edytuj.
+	•	W oknie edycji zmiennych kliknij Nowy, a następnie wklej wcześniej skopiowaną ścieżkę (C:\ffmpeg\bin).
+	•	Kliknij OK we wszystkich oknach, aby zatwierdzić zmiany.
+
+## Krok 6: Konfiguracja tokena bota
 
 1. Utwórz plik `token.env` w tym samym folderze, gdzie masz główny plik z kodem bota (discordbot.py).
 2. Wklej token bota, który skopiowałeś wcześniej, w następujący sposób:
@@ -106,7 +121,7 @@ TOKEN=Twój_Token_Bota
 
 Zapisz plik.
 
-## Krok 6: Uruchomienie bota
+## Krok 7: Uruchomienie bota
 
 Po skonfigurowaniu tokena bota możesz uruchomić bota, używając poniższego polecenia w `CMD`:
 
