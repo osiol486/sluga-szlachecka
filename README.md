@@ -77,28 +77,10 @@ Aby pobrać kod źródłowy bota, możesz skorzystać z opcji pobrania pliku .zi
 Aby uruchomić bota, musisz zainstalować kilka bibliotek Pythona. W terminalu (`CMD`), w katalogu projektu (czyli musisz przez `CMD` wejść do folderu, gdzie masz pobranego bota, więc musisz wpisać komendę `cd C:/lokalizacja-twojego-projektu`), wpisz poniższe polecenia:
 
    ```bash
-   pip install discord.py
-   ```
-   ```bash
-   pip install youtube-dl
-   ```
-   ```bash
-   pip install yt-dlp
-   ```
-   ```bash
-   pip install python-dotenv
-   ```
-   ```bash
-   pip install colorama
-   ```
-   ```bash
-   pip install loguru
-   ```
-   ```bash
-   pip install emoji
+   pip install -r requirements.txt
    ```
 
-Jeżeli po uruchomieniu bota wyskakuje ci w konsoli, że nie znajduje biblioteki o nazwie [nazwa biblioteki], to znajdź nazwę tej biblioteki w pliku `requirements.txt`, a następnie wpisz komendę w `CMD` `pip install [nazwa biblioteki]`.
+Jeżeli po uruchomieniu bota wyskakuje ci w konsoli, że nie znajduje biblioteki o nazwie [nazwa biblioteki], to znajdź nazwę tej biblioteki w kodzie błędu, a następnie wpisz komendę w `CMD` `pip install [nazwa biblioteki]`.
 
 ## Krok 5 Konfiguracja FFmpeg
 
