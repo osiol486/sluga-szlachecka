@@ -277,7 +277,6 @@ class Music(commands.Cog):
     async def loop(self, ctx):
         self.loop_song = not self.loop_song
         status = "włączone" if self.loop_song else "wyłączone"
-        logger.debug(f"Zapętlanie utworu: {status}")
         await ctx.send(f"Zapętlanie utworu zostało {status}. 🎶")
 
     # Komenda zapętlania kolejki
@@ -285,7 +284,6 @@ class Music(commands.Cog):
     async def loopqueue(self, ctx):
         self.loop_queue = not self.loop_queue
         status = "włączone" if self.loop_queue else "wyłączone"
-        logger.debug(f"Zapętlanie kolejki: {status}")
         await ctx.send(f"Zapętlanie kolejki zostało {status}. 🎶")
 
     # Komenda zatrzymywania odtwarzania
@@ -479,7 +477,6 @@ class Music(commands.Cog):
             ctx.voice_client.stop()
             await self.play_song(ctx, url, start_time=new_position)
 
-            logger.debug(f"Przewinięto utwór do przodu o {seconds} sekund.")
             await ctx.send(f"Przewinięto utwór do przodu o {seconds} sekund. ⏩")
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
@@ -498,7 +495,6 @@ class Music(commands.Cog):
             ctx.voice_client.stop()
             await self.play_song(ctx, url, start_time=new_position)
 
-            logger.debug(f"Cofnięto utwór o {seconds} sekund.")
             await ctx.send(f"Cofnięto utwór o {seconds} sekund. ⏪")
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
