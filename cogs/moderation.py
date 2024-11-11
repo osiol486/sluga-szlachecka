@@ -1,10 +1,10 @@
 import discord
 from discord.ext import commands
-from discord.ext.commands import has_permissions, MissingPermissions
+from discord.ext.commands import has_permissions
 import asyncio
 from loguru import logger
 from colorama import Fore, Style
-from utils.utils import parse_time, parse_minutes_seconds
+from utils.utils import parse_time
 from utils.constants import ERROR_NO_PERMISSION_USER, ERROR_NO_PERMISSION_BOT, EMBED_COLOR_RED, EMBED_COLOR_YELLOW
 
 # Funkcja logująca wiadomości na żółto z informacją o serwerze

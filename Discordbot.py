@@ -1,4 +1,3 @@
-
 import subprocess
 import sys
 
@@ -7,7 +6,7 @@ def check_outdated_packages():
     result = subprocess.run([sys.executable, "-m", "pip", "list", "--outdated"], capture_output=True, text=True)
 
     outdated_packages = result.stdout.splitlines()
-    
+
     # Jeśli są jakieś przestarzałe pakiety, wypisz je i zakończ działanie programu
     if len(outdated_packages) > 2:  # Pomijamy nagłówek tabeli
         print("Pakiety wymagające aktualizacji:\n")
@@ -17,10 +16,14 @@ def check_outdated_packages():
         print("pip list --outdated | tail -n +3 | awk '{print $1}' | xargs -n1 pip install -U\n")
         print("Zaktualizuj pakiety, zanim uruchomisz bota.")
         sys.exit(1)  # Zakończ program z kodem błędu
+    else:
+        print("Wszystkie pakiety są aktualne. ✔️")
 
 # Sprawdź przestarzałe pakiety przed uruchomieniem bota
 check_outdated_packages()
 
+
+import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv

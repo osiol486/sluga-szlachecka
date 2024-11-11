@@ -1,5 +1,4 @@
 import os
-import sys
 import discord
 from discord.ext import commands
 import yt_dlp as youtube_dl
@@ -11,9 +10,9 @@ from utils.utils import parse_time, parse_minutes_seconds
 import time
 from utils.constants import EMBED_COLOR_GREEN
 
-# Przykład formatu logów, w którym nie używamy `ctx` jako domyślnej zmiennej
-logger.remove()  # Usunięcie poprzednich konfiguracji
-logger.add(sys.stderr, format="{time} {level} {message}", level="DEBUG")
+from logger_config import configure_logger
+configure_logger()
+
 
 def pink_log(ctx, message):
     if ctx:
@@ -108,39 +107,39 @@ class Music(commands.Cog):
         self.voice_client.play(source, after=lambda e: logger.error(f'Błąd podczas odtwarzania: {e}') if e else None)
         self.start_time = time.time() - start_time  # Ustawienie czasu rozpoczęcia odtwarzania
 
-    # Komenda odtwarzania muzyki
     @commands.command(name='play', aliases=['p'], help='Odtwórz muzykę z YouTube. Użyj: !play [nazwa utworu / URL]')
     async def play(self, ctx, *url):
         global disconnect_task
+
+        # Upewnij się, że użytkownik jest na kanale głosowym
         try:
-            # Przechodzimy na kanał głosowy użytkownika
             channel = ctx.author.voice.channel
             if ctx.voice_client is None:
-                voice_client = await channel.connect()
-                self.voice_client = voice_client
+                # Połącz się z kanałem, jeśli bot jeszcze nie jest połączony
+                self.voice_client = await channel.connect()
             else:
-                self.voice_client = ctx.voice_client
-                # Jeśli bot gra na innym kanale, blokujemy
-                if self.voice_client.channel != channel:
+                # Sprawdź, czy bot jest na kanale użytkownika
+                if ctx.voice_client.channel != channel:
                     await ctx.send("Bot jest już połączony na innym kanale głosowym. 🎶")
                     return
+                self.voice_client = ctx.voice_client
         except AttributeError:
             await ctx.send("Musisz być na kanale głosowym, aby użyć tej komendy. 🎶")
             return
 
-        # Jeśli istnieje zadanie rozłączenia, anulujemy je
+        # Anuluj rozłączenie, jeśli jest w toku
         if disconnect_task:
             disconnect_task.cancel()
             disconnect_task = None
 
-        # Łączenie URL jeśli użytkownik podał frazę zamiast linku
-        url = ' '.join(url).strip()  # Usuń nadmiarowe białe znaki
+        # Łączenie URL, jeśli użytkownik podał frazę zamiast linku
+        url = ' '.join(url).strip()
 
         # Identyfikator serwera
         guild_id = ctx.guild.id
         # Utwórz nową kolejkę dla tego serwera, jeśli nie istnieje
         if guild_id not in self.queue:
-         self.queue[guild_id] = []
+            self.queue[guild_id] = []
 
         # Opcje dla youtube_dl
         ydl_opts = {
@@ -152,36 +151,30 @@ class Music(commands.Cog):
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
-            'quiet': True  # Ustawienie 'quiet', aby ograniczyć logi yt_dlp
+            'quiet': True  # Ogranicz logi yt_dlp
         }
 
-        # Sprawdź, czy utwór jest już w cache
+        # Sprawdź, czy utwór jest w cache
         cached_url = None
         if url in song_cache:
             info = song_cache[url]
-            logger.debug(f'Użycie cache dla utworu: {info.get("title", "Nieznany tytuł")}')
+            logger.info(f'Użycie cache dla utworu: {info.get("title", "Nieznany tytuł")}')
             cached_url = url
         else:
-            # Zamiast używać `with youtube_dl.YoutubeDL(...)`, wywołaj asynchronicznie `get_video_info`
             try:
+                # Pobierz informacje o utworze asynchronicznie
                 info = await get_video_info(url, ydl_opts)
 
                 # Jeśli to wyszukiwanie, sprawdzamy, czy są wyniki
                 if 'entries' in info and len(info['entries']) > 0:
                     info = info['entries'][0]
-                    # Aktualizacja URL na pełny adres URL zwrócony przez YouTube
                     url = info['webpage_url']
                 elif 'entries' in info:
                     await ctx.send("Nie znaleziono żadnych wyników. Spróbuj użyć innej frazy. 🎶")
                     return
 
-                # Sprawdź, czy ten pełny URL jest już w cache
-                if url in song_cache:
-                    info = song_cache[url]
-                    logger.debug(f'Użycie cache dla utworu: {info.get("title", "Nieznany tytuł")}')
-                    cached_url = url
-                else:
-                    # Zapisz informacje o utworze w cache'u
+                # Dodaj do cache
+                if url not in song_cache:
                     song_cache[url] = info
                     logger.debug(f'Dodano do cache utwór: {info.get("title", "Nieznany tytuł")}')
                     save_cache()
@@ -190,14 +183,13 @@ class Music(commands.Cog):
                 await ctx.send("Nie udało się znaleźć lub odtworzyć tej piosenki. Spróbuj jeszcze raz. 🎶")
                 return
 
-        # Odtwarzanie utworu
+        # Przygotowanie danych o piosence
         url2 = info['url']
         title = info.get('title', 'Nieznany tytuł')
         webpage_url = info.get('webpage_url', '')
         thumbnail = info.get('thumbnail', '')
         duration = info.get('duration', 0)
 
-        # Przygotowanie danych o piosence
         song_info = {
             'url': url2,
             'title': title,
@@ -206,36 +198,43 @@ class Music(commands.Cog):
             'duration': duration
         }
 
+        # Sprawdź, czy coś jest aktualnie odtwarzane lub jest wstrzymane
         if self.voice_client.is_playing() or self.voice_client.is_paused():
-            # Dodanie piosenki do kolejki
-            self.queue[ctx.guild.id].append(song_info)
+            # Dodanie utworu do kolejki
+            self.queue[guild_id].append(song_info)
             embed = discord.Embed(title="Dodano do kolejki", description=f"[{title}]({webpage_url})", color=EMBED_COLOR_GREEN)
             embed.set_thumbnail(url=thumbnail)
             embed.add_field(name="Czas trwania", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
             await ctx.send(embed=embed)
         else:
-            # Ustawienie aktualnie odtwarzanego utworu
+            # Rozpoczęcie odtwarzania, jeśli nic nie jest odtwarzane
+            self.current_song = song_info
             await self.start_playing(ctx, song_info)
 
-    # Funkcja pomocnicza do rozpoczęcia odtwarzania utworu
+
+    #### Poprawiona Funkcja `start_playing()`
+
     async def start_playing(self, ctx, song_info):
-        def after_song(err):
+    # Użyj funkcji asynchronicznej jako after callback
+        async def after_song(self, ctx, err):
             if err:
                 logger.error(f'Błąd podczas odtwarzania utworu: {err}')
+            
+            # Sprawdź, czy zapętlanie jest włączone
             if self.loop_song:
-                ctx.bot.loop.create_task(self.start_playing(ctx, self.current_song))
+                await self.start_playing(ctx, self.current_song)
             elif self.queue[ctx.guild.id]:
                 next_song = self.queue[ctx.guild.id].pop(0)
                 if self.loop_queue:
-                    self.queue[ctx.guild.id].append(next_song)  # Dodaj na koniec, jeśli loop_queue jest włączone
-                ctx.bot.loop.create_task(self.start_playing(ctx, next_song))
+                    self.queue[ctx.guild.id].append(next_song)
+                await self.start_playing(ctx, next_song)
             else:
                 global disconnect_task
                 disconnect_task = ctx.bot.loop.create_task(self.disconnect_after_delay(ctx))
 
         # Ustawienie aktualnie odtwarzanego utworu
         self.current_song = song_info
-        self.start_time = time.time()
+        self.start_time = time.time()  # Aktualizacja start_time
 
         # Przygotowanie embedu z informacjami o utworze
         embed = discord.Embed(title="Odtwarzanie muzyki", description=f"[{song_info['title']}]({song_info['webpage_url']})", color=EMBED_COLOR_GREEN)
@@ -248,7 +247,11 @@ class Music(commands.Cog):
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
             'options': '-vn'
         }
-        self.voice_client.play(discord.FFmpegPCMAudio(song_info['url'], **FFMPEG_OPTIONS), after=after_song)
+        
+        # Użycie `lambda` do wywołania funkcji asynchronicznej w pętli eventowej
+        self.voice_client.play(discord.FFmpegPCMAudio(self.current_song['url'], **FFMPEG_OPTIONS), after=lambda e: ctx.bot.loop.create_task(self.after_song(ctx, e)))
+
+
 
     # Funkcja rozłączenia po opóźnieniu
     async def disconnect_after_delay(self, ctx):
@@ -317,18 +320,28 @@ class Music(commands.Cog):
     async def queue_list(self, ctx, page: int = 1):
         guild_id = ctx.guild.id
         if guild_id not in self.queue or not self.queue[guild_id]:
-            await ctx.send("Kolejka jest pusta. 🎶")
+            if self.current_song:
+                embed = discord.Embed(title="Kolejka piosenek", description="**🎶 Aktualnie odtwarzana piosenka**\n"
+                                                                            f"[{self.current_song['title']}]({self.current_song['webpage_url']}) - {self.current_song['duration'] // 60}:{self.current_song['duration'] % 60:02d}\n",
+                                    color=EMBED_COLOR_GREEN)
+                embed.set_thumbnail(url=self.current_song['thumbnail'])
+                msg = await ctx.send(embed=embed)
+
+                if len(self.queue[guild_id]) > 0:
+                    await msg.add_reaction('⏮️')
+                    await msg.add_reaction('⏭️')
+            else:
+                await ctx.send("Kolejka jest pusta. 🎶")
             return
 
-        # Wyświetl aktualnie odtwarzany utwór
         queue_str = ""
         if self.current_song:
             title = self.current_song['title']
             webpage_url = self.current_song['webpage_url']
             duration = self.current_song['duration']
-            queue_str += f"**Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n\n"
+            queue_str += f"**🎶 Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n\n"
 
-        # Tworzenie stron dla utworów w kolejce
+        # Ustawienie liczby elementów na stronę na 10
         items_per_page = 10
         total_pages = (len(self.queue[guild_id]) + items_per_page - 1) // items_per_page
         page = max(1, min(page, total_pages))
@@ -338,66 +351,62 @@ class Music(commands.Cog):
         # Wyświetl piosenki na bieżącej stronie
         queue_page = self.queue[guild_id][start_idx:end_idx]
         if queue_page:
-            queue_str += "**Kolejne piosenki**\n"
+            queue_str += "**📜 Kolejne piosenki w kolejce**\n"
             for idx, song in enumerate(queue_page):
                 title = song['title']
                 webpage_url = song['webpage_url']
                 duration = song['duration']
                 queue_str += f"{start_idx + idx + 1}. [{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n"
 
-        # Stworzenie i wysłanie embedu
         embed = discord.Embed(title=f"Kolejka piosenek - Strona {page}/{total_pages}", description=queue_str, color=EMBED_COLOR_GREEN)
         if self.current_song:
             embed.set_thumbnail(url=self.current_song['thumbnail'])
-        message = await ctx.send(embed=embed)
+        msg = await ctx.send(embed=embed)
 
-        # Dodawanie reakcji, jeśli jest więcej niż jedna strona
         if total_pages > 1:
-            await message.add_reaction("⬅️")
-            await message.add_reaction("➡️")
+            await msg.add_reaction('⏮️')
+            await msg.add_reaction('⏭️')
 
-            def check(reaction, user):
-                return user == ctx.author and str(reaction.emoji) in ["⬅️", "➡️"] and reaction.message.id == message.id
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ['⏮️', '⏭️'] and reaction.message.id == msg.id
 
-            current_page = page
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                    if str(reaction.emoji) == "➡️" and current_page < total_pages:
-                        current_page += 1
-                    elif str(reaction.emoji) == "⬅️" and current_page > 1:
-                        current_page -= 1
-                    else:
-                        await message.remove_reaction(reaction, user)
-                        continue
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
 
-                    # Edytowanie wiadomości z embedem
-                    start_idx = (current_page - 1) * items_per_page
-                    end_idx = start_idx + items_per_page
-                    queue_page = self.queue[ctx.guild.id][start_idx:end_idx]
-                    queue_str = ""
-                    if self.current_song:
-                        title = self.current_song['title']
-                        webpage_url = self.current_song['webpage_url']
-                        duration = self.current_song['duration']
-                        queue_str += f"**Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n\n"
-                    if queue_page:
-                        queue_str += "**Kolejne piosenki**\n"
-                        for idx, song in enumerate(queue_page):
-                            title = song['title']
-                            webpage_url = song['webpage_url']
-                            duration = song['duration']
-                            queue_str += f"{start_idx + idx + 1}. [{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n"
-                    embed.description = queue_str
-                    embed.title = f"Kolejka piosenek - Strona {current_page}/{total_pages}"
-                    await message.edit(embed=embed)
+                if str(reaction.emoji) == '⏮️':
+                    page = max(1, page - 1)
+                elif str(reaction.emoji) == '⏭️':
+                    page = min(total_pages, page + 1)
 
-                    # Usuwanie reakcji użytkownika
-                    await message.remove_reaction(reaction, user)
+                await msg.remove_reaction(reaction.emoji, user)
 
-                except asyncio.TimeoutError:
-                    await message.clear_reactions()
-                    break
+                queue_str = ""
+                if self.current_song:
+                    title = self.current_song['title']
+                    webpage_url = self.current_song['webpage_url']
+                    duration = self.current_song['duration']
+                    queue_str += f"**🎶 Aktualnie odtwarzana piosenka**\n[{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n\n"
+
+                start_idx = (page - 1) * items_per_page
+                end_idx = start_idx + items_per_page
+                queue_page = self.queue[guild_id][start_idx:end_idx]
+
+                if queue_page:
+                    queue_str += "**📜 Kolejne piosenki w kolejce**\n"
+                    for idx, song in enumerate(queue_page):
+                        title = song['title']
+                        webpage_url = song['webpage_url']
+                        duration = song['duration']
+                        queue_str += f"{start_idx + idx + 1}. [{title}]({webpage_url}) - {duration // 60}:{duration % 60:02d}\n"
+
+                embed = discord.Embed(title=f"Kolejka piosenek - Strona {page}/{total_pages}", description=queue_str, color=EMBED_COLOR_GREEN)
+                if self.current_song:
+                    embed.set_thumbnail(url=self.current_song['thumbnail'])
+                await msg.edit(embed=embed)
+
+            except asyncio.TimeoutError:
+                break
 
 
 
@@ -434,6 +443,8 @@ class Music(commands.Cog):
             'before_options': f'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {start_time}',
             'options': '-vn'
         }
+        
+        # Pobranie informacji o utworze z YouTube
         with youtube_dl.YoutubeDL({'format': 'bestaudio'}) as ydl:
             info = ydl.extract_info(url, download=False)
             url2 = info['url']
@@ -442,25 +453,34 @@ class Music(commands.Cog):
             thumbnail = info.get('thumbnail', '')
             duration = info.get('duration', 0)
 
+        # Stworzenie źródła audio
         source = discord.FFmpegPCMAudio(url2, **FFMPEG_OPTIONS)
+
+        # Połączenie z kanałem głosowym
         if ctx.voice_client is None:
             channel = ctx.author.voice.channel
             self.voice_client = await channel.connect()
         else:
             self.voice_client = ctx.voice_client
 
-        self.voice_client.play(source, after=lambda e: logger.error(f'Błąd podczas odtwarzania: {e}') if e else None)
-        self.start_time = time.time() - start_time  # Ustawienie czasu rozpoczęcia odtwarzania
+        # Odtwarzanie utworu
+        self.voice_client.play(source, after=lambda e: self.after_song(ctx, e))
 
-        # Aktualizacja historii utworów
+        # Ustawienie czasu rozpoczęcia odtwarzania
+        self.start_time = time.time() - start_time
+
+        # Aktualizacja historii utworów, jeśli jest coś aktualnie odtwarzane
         if self.current_song:
             self.history.append(self.current_song)
+
+        # Aktualizacja informacji o aktualnie odtwarzanym utworze
         self.current_song = {
             'url': url,
             'title': title,
             'webpage_url': webpage_url,
             'thumbnail': thumbnail,
-            'duration': duration
+            'duration': duration,
+            'seek_position': start_time
         }
 
     @commands.command(name='forward', aliases=['fwd'], help='Przewiń aktualnie odtwarzaną piosenkę o określoną liczbę sekund. Użyj: !forward [sekundy]')
@@ -470,12 +490,25 @@ class Music(commands.Cog):
                 await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
                 return
 
-            url = self.current_song['url']
+            # Oblicz nową pozycję, upewniając się, że nie przekraczamy długości utworu
             elapsed_time = time.time() - self.start_time if self.start_time else 0
-            new_position = elapsed_time + seconds
+            new_position = min(elapsed_time + seconds, self.current_song['duration'])
 
-            ctx.voice_client.stop()
-            await self.play_song(ctx, url, start_time=new_position)
+            # Rozpoczęcie odtwarzania od nowej pozycji za pomocą `FFmpeg` z `-ss`
+            FFMPEG_OPTIONS = {
+                'before_options': f'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {new_position}',
+                'options': '-vn'
+            }
+            
+            # Stopowanie aktualnego klienta i ponowne odtwarzanie od nowej pozycji
+            self.voice_client.stop()
+            self.voice_client.play(discord.FFmpegPCMAudio(self.current_song['url'], **FFMPEG_OPTIONS), after=lambda e: ctx.bot.loop.create_task(self.after_song(ctx, e)))
+
+            # Ustawienie start_time na nową wartość
+            self.start_time = time.time() - new_position
+
+            # Aktualizacja embedu z informacjami o nowym czasie
+            await self.send_now_playing_embed(ctx)
 
             await ctx.send(f"Przewinięto utwór do przodu o {seconds} sekund. ⏩")
         else:
@@ -488,16 +521,31 @@ class Music(commands.Cog):
                 await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
                 return
 
-            url = self.current_song['url']
+            # Oblicz nową pozycję, upewniając się, że nie spada poniżej 0
             elapsed_time = time.time() - self.start_time if self.start_time else 0
             new_position = max(elapsed_time - seconds, 0)
 
-            ctx.voice_client.stop()
-            await self.play_song(ctx, url, start_time=new_position)
+            # Rozpoczęcie odtwarzania od nowej pozycji za pomocą `FFmpeg` z `-ss`
+            FFMPEG_OPTIONS = {
+                'before_options': f'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {new_position}',
+                'options': '-vn'
+            }
+            
+            # Stopowanie aktualnego klienta i ponowne odtwarzanie od nowej pozycji
+            self.voice_client.stop()
+            self.voice_client.play(discord.FFmpegPCMAudio(self.current_song['url'], **FFMPEG_OPTIONS), after=lambda e: ctx.bot.loop.create_task(self.after_song(ctx, e)))
+
+            # Ustawienie start_time na nową wartość
+            self.start_time = time.time() - new_position
+
+            # Aktualizacja embedu z informacjami o nowym czasie
+            await self.send_now_playing_embed(ctx)
 
             await ctx.send(f"Cofnięto utwór o {seconds} sekund. ⏪")
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
+
+
 
     @commands.command(name='seek', help='Przewiń aktualnie odtwarzaną piosenkę do określonego czasu. Użyj: !seek [sekundy lub mm:ss]')
     async def seek(self, ctx, *, time_str: str):
@@ -513,14 +561,20 @@ class Music(commands.Cog):
                 return
 
             url = self.current_song['url']
+            # Zatrzymanie obecnie odtwarzanego utworu
             ctx.voice_client.stop()
+            # Rozpoczęcie odtwarzania od określonego czasu
             await self.play_song(ctx, url, start_time=seconds)
+
+            # Aktualizacja `start_time` i `current_song`
+            self.start_time = time.time() - seconds
+            self.current_song['seek_position'] = seconds
 
             logger.debug(f"Przewinięto utwór do pozycji {seconds} sekund.")
             await ctx.send(f"Przewinięto utwór do pozycji {seconds} sekund. ⏩")
         else:
             await ctx.send("Nie odtwarzam teraz żadnej muzyki. 🎶")
-    
+
     @commands.command(name='remove', help='Usuń utwór z kolejki na podstawie jego numeru. Użyj: !remove [numer]')
     async def remove(self, ctx, position: int):
         if position < 1 or position > len(self.queue[ctx.guild.id]):
