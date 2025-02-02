@@ -3,25 +3,26 @@ import sys
 
 def check_outdated_packages():
     # Uruchom komendę pip list --outdated, aby sprawdzić przestarzałe pakiety
-    result = subprocess.run([sys.executable, "-m", "pip", "list", "--outdated"], capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "list", "--outdated"],
+        capture_output=True,
+        text=True
+    )
 
     outdated_packages = result.stdout.splitlines()
 
-    # Jeśli są jakieś przestarzałe pakiety, wypisz je i zakończ działanie programu
-    if len(outdated_packages) > 2:  # Pomijamy nagłówek tabeli
-        print("Pakiety wymagające aktualizacji:\n")
+    # Jeśli są jakieś przestarzałe pakiety, wyświetl ostrzeżenie
+    if len(outdated_packages) > 2:  # Pomijamy nagłówki tabeli
+        print("⚠️  Wykryto przestarzałe pakiety wymagające aktualizacji:\n")
         for line in outdated_packages[2:]:
             print(line)
-        print("\nAby zaktualizować przestarzałe pakiety, wpisz poniższą komendę:\n")
-        print("pip list --outdated | tail -n +3 | awk '{print $1}' | xargs -n1 pip install -U\n")
-        print("Zaktualizuj pakiety, zanim uruchomisz bota.")
-        sys.exit(1)  # Zakończ program z kodem błędu
+        print("\nMożesz je zaktualizować poniższym poleceniem w PowerShellu:")
+        print("pip list --outdated | ForEach-Object { pip install -U ($_.Split()[0]) }\n")
     else:
-        print("Wszystkie pakiety są aktualne. ✔️")
+        print("✅ Wszystkie pakiety są aktualne.\n")
 
 # Sprawdź przestarzałe pakiety przed uruchomieniem bota
 check_outdated_packages()
-
 
 import os
 import discord
